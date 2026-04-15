@@ -1,0 +1,31 @@
+spring:
+  datasource:
+    url: jdbc:h2:mem:httt-test;MODE=PostgreSQL;DB_CLOSE_DELAY=-1
+    username: sa
+    password:
+  jpa:
+    hibernate:
+      ddl-auto: create-drop
+  data:
+    redis:
+      host: localhost
+      port: 6379
+      repositories:
+        enabled: false
+  mail:
+    host: localhost
+    port: 1025
+  ai:
+    openai:
+      api-key: test-openai-key
+
+app:
+  security:
+    jwt-secret: test-secret-key
+    access-token-duration: PT30M
+    refresh-token-duration: P7D
+  bootstrap:
+    admin-username: admin
+    admin-password: admin123
+    admin-email: admin@test.local
+    admin-full-name: Test Admin

@@ -1,0 +1,29 @@
+# Agent Notes
+/.agents/
+/plan/
+
+# Environment
+.env
+.env.*
+!.env.example
+
+# Reference repositories
+/cloud-integration/
+/backend/
+
+# Java / Gradle
+/server/.gradle/
+/server/build/
+/server/out/
+
+# Node / Next
+/client/.next/
+/client/node_modules/
+
+# IDE
+.idea/
+.vscode/
+
+# OS
+.DS_Store
+Thumbs.db
