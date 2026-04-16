@@ -107,15 +107,21 @@ public class AuthService {
 
         UserEntity userEntity = userRepository.findWithRolesById(refreshSession.getUserId())
                 .orElseThrow(() -> new UnauthorizedException("INVALID_REFRESH_TOKEN", "Refresh token khong hop le."));
-        if (!userEntity.getSessionVersion().equals(refreshSession.getSessionVersion())) {
+
+        if (userEntity.getStatus() == null || userEntity.getStatus() != CommonStatusConstant.STATUS_ACTIVE) {
             authSessionService.invalidateUserSessions(userEntity.getId());
-            throw new UnauthorizedException("SESSION_EXPIRED", "Phien dang nhap da het hieu luc.");
+            throw new UnauthorizedException("USER_INACTIVE", "Tai khoan dang khong hoat dong.");
         }
 
         RoleEntity selectedRole = userEntity.getRoles().stream()
                 .filter(roleEntity -> roleEntity.getId().equals(refreshSession.getSelectedRoleId()))
                 .findFirst()
                 .orElseThrow(() -> new UnauthorizedException("ROLE_NOT_FOUND", "Role dang nhap khong con ton tai."));
+
+        if (selectedRole.getStatus() == null || selectedRole.getStatus() != CommonStatusConstant.STATUS_ACTIVE) {
+            authSessionService.invalidateUserSessions(userEntity.getId());
+            throw new UnauthorizedException("ROLE_INACTIVE", "Role dang nhap khong con hoat dong.");
+        }
 
         authSessionService.removeRefreshSession(userEntity.getId(), request.getRefreshToken());
         return issueAuthResponse(userEntity, selectedRole);
@@ -168,6 +174,27 @@ public class AuthService {
                 accessDuration.toSeconds(),
                 toCurrentUserResponse(authenticatedUser)
         );
+    }
+
+    @Transactional(readOnly = true)
+    public AuthenticatedUser resolveFreshAuthenticatedUser(Long userId, Long selectedRoleId) {
+        UserEntity userEntity = userRepository.findWithRolesById(userId)
+                .orElseThrow(() -> new UnauthorizedException("USER_NOT_FOUND", "Nguoi dung khong con ton tai."));
+
+        if (userEntity.getStatus() == null || userEntity.getStatus() != CommonStatusConstant.STATUS_ACTIVE) {
+            throw new UnauthorizedException("USER_INACTIVE", "Tai khoan dang khong hoat dong.");
+        }
+
+        RoleEntity selectedRole = userEntity.getRoles().stream()
+                .filter(roleEntity -> roleEntity.getId().equals(selectedRoleId))
+                .findFirst()
+                .orElseThrow(() -> new UnauthorizedException("ROLE_NOT_FOUND", "Role dang nhap khong con ton tai."));
+
+        if (selectedRole.getStatus() == null || selectedRole.getStatus() != CommonStatusConstant.STATUS_ACTIVE) {
+            throw new UnauthorizedException("ROLE_INACTIVE", "Role dang nhap khong con hoat dong.");
+        }
+
+        return buildAuthenticatedUser(userEntity, selectedRole);
     }
 
     private AuthenticatedUser buildAuthenticatedUser(UserEntity userEntity, RoleEntity selectedRole) {

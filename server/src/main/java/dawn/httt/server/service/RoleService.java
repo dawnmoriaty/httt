@@ -72,10 +72,19 @@ public class RoleService {
     @Transactional
     public RoleResponse updateRole(Long roleId, UpdateRoleRequest request) {
         RoleEntity roleEntity = getRoleEntity(roleId);
+        Integer oldStatus = roleEntity.getStatus();
+
         roleEntity.setName(request.getName().trim());
         roleEntity.setDescription(request.getDescription());
         roleEntity.setStatus(request.getStatus());
-        return toResponse(roleRepository.save(roleEntity));
+        RoleEntity savedRole = roleRepository.save(roleEntity);
+
+        if (!oldStatus.equals(request.getStatus())) {
+            userRepository.findDistinctIdsByRoleId(roleId).forEach(userService::bumpSessionVersion);
+            userRepository.findDistinctIdsByRoleId(roleId).forEach(authSessionService::invalidateUserSessions);
+        }
+
+        return toResponse(savedRole);
     }
 
     @Transactional

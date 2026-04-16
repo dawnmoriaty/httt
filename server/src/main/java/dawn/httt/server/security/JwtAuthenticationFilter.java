@@ -2,12 +2,15 @@ package dawn.httt.server.security;
 
 import com.auth0.jwt.interfaces.DecodedJWT;
 import dawn.httt.server.exception.UnauthorizedException;
+import dawn.httt.server.service.AuthService;
 import dawn.httt.server.service.AuthSessionService;
 import jakarta.servlet.FilterChain;
 import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import java.io.IOException;
+import java.time.Duration;
+import java.time.Instant;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
@@ -24,15 +27,18 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
 
     private final JwtTokenProvider jwtTokenProvider;
     private final AuthSessionService authSessionService;
+    private final AuthService authService;
     private final SecurityAuthenticationEntryPoint securityAuthenticationEntryPoint;
 
     public JwtAuthenticationFilter(
             JwtTokenProvider jwtTokenProvider,
             AuthSessionService authSessionService,
+            AuthService authService,
             SecurityAuthenticationEntryPoint securityAuthenticationEntryPoint
     ) {
         this.jwtTokenProvider = jwtTokenProvider;
         this.authSessionService = authSessionService;
+        this.authService = authService;
         this.securityAuthenticationEntryPoint = securityAuthenticationEntryPoint;
     }
 
@@ -88,7 +94,16 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
         }
 
         if (authSessionService.isRedisEnabled()) {
-            throw new UnauthorizedException("SESSION_NOT_FOUND", "Phien dang nhap khong con hop le.");
+            Long userId = decodedJWT.getClaim("userId").asLong();
+            Long selectedRoleId = decodedJWT.getClaim("selectedRoleId").asLong();
+            AuthenticatedUser freshUser = authService.resolveFreshAuthenticatedUser(userId, selectedRoleId);
+
+            Duration remainingTtl = Duration.between(Instant.now(), decodedJWT.getExpiresAtAsInstant());
+            if (!remainingTtl.isNegative() && !remainingTtl.isZero()) {
+                authSessionService.saveAccessSession(tokenId, freshUser, remainingTtl);
+            }
+
+            return freshUser;
         }
 
         return AuthenticatedUser.builder()
