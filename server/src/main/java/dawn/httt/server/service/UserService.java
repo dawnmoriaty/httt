@@ -13,6 +13,8 @@ import dawn.httt.server.repository.RoleRepository;
 import dawn.httt.server.repository.UserRepository;
 import java.util.LinkedHashSet;
 import java.util.List;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -37,8 +39,8 @@ public class UserService {
         this.authSessionService = authSessionService;
     }
 
-    public List<UserResponse> getAllUsers() {
-        return userRepository.findAllByOrderByIdAsc().stream().map(this::toResponse).toList();
+    public Page<UserResponse> getAllUsers(Pageable pageable) {
+        return userRepository.findAllByOrderByIdAsc(pageable).map(this::toResponse);
     }
 
     @Transactional

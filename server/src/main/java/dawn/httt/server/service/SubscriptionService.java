@@ -6,8 +6,9 @@ import dawn.httt.server.entity.SubscriptionEntity;
 import dawn.httt.server.exception.NotFoundException;
 import dawn.httt.server.integration.email.EmailSender;
 import dawn.httt.server.repository.SubscriptionRepository;
-import java.util.List;
 import java.util.Map;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 
 @Service
@@ -21,8 +22,8 @@ public class SubscriptionService {
         this.emailSender = emailSender;
     }
 
-    public List<SubscriptionResponse> getAll() {
-        return subscriptionRepository.findAllByOrderByIdDesc().stream().map(this::toResponse).toList();
+    public Page<SubscriptionResponse> getAll(Pageable pageable) {
+        return subscriptionRepository.findAllByOrderByIdDesc(pageable).map(this::toResponse);
     }
 
     public SubscriptionResponse create(SubscriptionUpsertRequest request) {

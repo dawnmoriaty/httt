@@ -1,6 +1,7 @@
 package dawn.httt.server.controller;
 
 import dawn.httt.server.common.ApiResponse;
+import dawn.httt.server.common.ApiResponses;
 import dawn.httt.server.constant.PermissionActionConstant;
 import dawn.httt.server.dto.request.CreateUserRequest;
 import dawn.httt.server.dto.request.UpdateUserRolesRequest;
@@ -8,7 +9,11 @@ import dawn.httt.server.dto.response.UserResponse;
 import dawn.httt.server.security.RequirePermission;
 import dawn.httt.server.service.UserService;
 import jakarta.validation.Valid;
-import java.util.List;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
+import org.springframework.data.domain.Sort;
+import org.springframework.data.web.PageableDefault;
+import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
@@ -29,22 +34,24 @@ public class UserController {
 
     @GetMapping
     @RequirePermission(resource = "user", action = PermissionActionConstant.VIEW)
-    public ApiResponse<List<UserResponse>> listUsers() {
-        return new ApiResponse<>(true, "Lay danh sach user thanh cong.", userService.getAllUsers());
+    public ResponseEntity<ApiResponse<Page<UserResponse>>> listUsers(
+            @PageableDefault(size = 20, sort = "id", direction = Sort.Direction.DESC) Pageable pageable
+    ) {
+        return ApiResponses.ok("Lay danh sach user thanh cong.", userService.getAllUsers(pageable));
     }
 
     @PostMapping
     @RequirePermission(resource = "user", action = PermissionActionConstant.ADD)
-    public ApiResponse<UserResponse> createUser(@Valid @RequestBody CreateUserRequest request) {
-        return new ApiResponse<>(true, "Tao user thanh cong.", userService.createUser(request));
+    public ResponseEntity<ApiResponse<UserResponse>> createUser(@Valid @RequestBody CreateUserRequest request) {
+        return ApiResponses.created("Tao user thanh cong.", userService.createUser(request));
     }
 
     @PutMapping("/{userId}/roles")
     @RequirePermission(resource = "user", action = PermissionActionConstant.UPDATE)
-    public ApiResponse<UserResponse> updateUserRoles(
+    public ResponseEntity<ApiResponse<UserResponse>> updateUserRoles(
             @PathVariable Long userId,
             @Valid @RequestBody UpdateUserRolesRequest request
     ) {
-        return new ApiResponse<>(true, "Cap nhat role cho user thanh cong.", userService.updateUserRoles(userId, request));
+        return ApiResponses.ok("Cap nhat role cho user thanh cong.", userService.updateUserRoles(userId, request));
     }
 }

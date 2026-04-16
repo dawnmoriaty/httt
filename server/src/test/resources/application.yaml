@@ -12,12 +12,12 @@ spring:
       port: 6379
       repositories:
         enabled: false
-  mail:
-    host: localhost
-    port: 1025
   ai:
     openai:
       api-key: test-openai-key
+  mail:
+    host: localhost
+    port: 1025
 
 app:
   security:

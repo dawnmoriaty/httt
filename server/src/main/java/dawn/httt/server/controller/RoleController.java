@@ -1,6 +1,7 @@
 package dawn.httt.server.controller;
 
 import dawn.httt.server.common.ApiResponse;
+import dawn.httt.server.common.ApiResponses;
 import dawn.httt.server.constant.PermissionActionConstant;
 import dawn.httt.server.dto.request.AssignRolePermissionsRequest;
 import dawn.httt.server.dto.request.CreateRoleRequest;
@@ -9,7 +10,11 @@ import dawn.httt.server.dto.response.RoleResponse;
 import dawn.httt.server.security.RequirePermission;
 import dawn.httt.server.service.RoleService;
 import jakarta.validation.Valid;
-import java.util.List;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
+import org.springframework.data.domain.Sort;
+import org.springframework.data.web.PageableDefault;
+import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
@@ -31,41 +36,43 @@ public class RoleController {
 
     @GetMapping
     @RequirePermission(resource = "role", action = PermissionActionConstant.VIEW)
-    public ApiResponse<List<RoleResponse>> listRoles() {
-        return new ApiResponse<>(true, "Lay danh sach role thanh cong.", roleService.getAllRoles());
+    public ResponseEntity<ApiResponse<Page<RoleResponse>>> listRoles(
+            @PageableDefault(size = 20, sort = "id", direction = Sort.Direction.DESC) Pageable pageable
+    ) {
+        return ApiResponses.ok("Lay danh sach role thanh cong.", roleService.getAllRoles(pageable));
     }
 
     @GetMapping("/{roleId}")
     @RequirePermission(resource = "role", action = PermissionActionConstant.VIEW)
-    public ApiResponse<RoleResponse> getRole(@PathVariable Long roleId) {
-        return new ApiResponse<>(true, "Lay chi tiet role thanh cong.", roleService.getRole(roleId));
+    public ResponseEntity<ApiResponse<RoleResponse>> getRole(@PathVariable Long roleId) {
+        return ApiResponses.ok("Lay chi tiet role thanh cong.", roleService.getRole(roleId));
     }
 
     @PostMapping
     @RequirePermission(resource = "role", action = PermissionActionConstant.ADD)
-    public ApiResponse<RoleResponse> createRole(@Valid @RequestBody CreateRoleRequest request) {
-        return new ApiResponse<>(true, "Tao role thanh cong.", roleService.createRole(request));
+    public ResponseEntity<ApiResponse<RoleResponse>> createRole(@Valid @RequestBody CreateRoleRequest request) {
+        return ApiResponses.created("Tao role thanh cong.", roleService.createRole(request));
     }
 
     @PutMapping("/{roleId}")
     @RequirePermission(resource = "role", action = PermissionActionConstant.UPDATE)
-    public ApiResponse<RoleResponse> updateRole(@PathVariable Long roleId, @Valid @RequestBody UpdateRoleRequest request) {
-        return new ApiResponse<>(true, "Cap nhat role thanh cong.", roleService.updateRole(roleId, request));
+    public ResponseEntity<ApiResponse<RoleResponse>> updateRole(@PathVariable Long roleId, @Valid @RequestBody UpdateRoleRequest request) {
+        return ApiResponses.ok("Cap nhat role thanh cong.", roleService.updateRole(roleId, request));
     }
 
     @PutMapping("/{roleId}/permissions")
     @RequirePermission(resource = "role", action = PermissionActionConstant.UPDATE)
-    public ApiResponse<RoleResponse> assignPermissions(
+    public ResponseEntity<ApiResponse<RoleResponse>> assignPermissions(
             @PathVariable Long roleId,
             @Valid @RequestBody AssignRolePermissionsRequest request
     ) {
-        return new ApiResponse<>(true, "Cap nhat quyen cho role thanh cong.", roleService.assignPermissions(roleId, request));
+        return ApiResponses.ok("Cap nhat quyen cho role thanh cong.", roleService.assignPermissions(roleId, request));
     }
 
     @DeleteMapping("/{roleId}")
     @RequirePermission(resource = "role", action = PermissionActionConstant.DELETE)
-    public ApiResponse<Void> deleteRole(@PathVariable Long roleId) {
+    public ResponseEntity<Void> deleteRole(@PathVariable Long roleId) {
         roleService.deleteRole(roleId);
-        return new ApiResponse<>(true, "Xoa role thanh cong.", null);
+        return ApiResponses.noContent();
     }
 }

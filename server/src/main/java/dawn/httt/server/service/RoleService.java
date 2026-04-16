@@ -12,9 +12,10 @@ import dawn.httt.server.exception.NotFoundException;
 import dawn.httt.server.repository.PermissionRepository;
 import dawn.httt.server.repository.RoleRepository;
 import dawn.httt.server.repository.UserRepository;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import java.util.LinkedHashSet;
 import java.util.List;
-import java.util.Set;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -44,8 +45,8 @@ public class RoleService {
         this.permissionGuard = permissionGuard;
     }
 
-    public List<RoleResponse> getAllRoles() {
-        return roleRepository.findAllByOrderByNameAsc().stream().map(this::toResponse).toList();
+    public Page<RoleResponse> getAllRoles(Pageable pageable) {
+        return roleRepository.findAllByOrderByNameAsc(pageable).map(this::toResponse);
     }
 
     public RoleResponse getRole(Long roleId) {

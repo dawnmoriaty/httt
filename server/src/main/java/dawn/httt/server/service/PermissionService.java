@@ -3,7 +3,8 @@ package dawn.httt.server.service;
 import dawn.httt.server.dto.response.PermissionResponse;
 import dawn.httt.server.entity.PermissionEntity;
 import dawn.httt.server.repository.PermissionRepository;
-import java.util.List;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 
 @Service
@@ -15,11 +16,10 @@ public class PermissionService {
         this.permissionRepository = permissionRepository;
     }
 
-    public List<PermissionResponse> getAllPermissions() {
-        return permissionRepository.findAllByOrderByModuleNameAscResourceNameAscActionNameAsc()
-                .stream()
-                .map(this::toResponse)
-                .toList();
+    public Page<PermissionResponse> getAllPermissions(Pageable pageable) {
+        return permissionRepository
+                .findAllByOrderByModuleNameAscResourceNameAscActionNameAsc(pageable)
+                .map(this::toResponse);
     }
 
     private PermissionResponse toResponse(PermissionEntity permissionEntity) {

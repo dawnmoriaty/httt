@@ -4,6 +4,8 @@ import dawn.httt.server.entity.PermissionEntity;
 import java.util.Collection;
 import java.util.List;
 import java.util.Optional;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
 
 public interface PermissionRepository extends JpaRepository<PermissionEntity, Long> {
@@ -12,5 +14,5 @@ public interface PermissionRepository extends JpaRepository<PermissionEntity, Lo
 
     List<PermissionEntity> findAllByIdIn(Collection<Long> ids);
 
-    List<PermissionEntity> findAllByOrderByModuleNameAscResourceNameAscActionNameAsc();
+    Page<PermissionEntity> findAllByOrderByModuleNameAscResourceNameAscActionNameAsc(Pageable pageable);
 }

@@ -5,7 +5,6 @@ import dawn.httt.server.common.ApiErrorResponse;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import java.io.IOException;
-import java.time.OffsetDateTime;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.security.core.AuthenticationException;
@@ -30,11 +29,9 @@ public class SecurityAuthenticationEntryPoint implements AuthenticationEntryPoin
         response.setStatus(HttpStatus.UNAUTHORIZED.value());
         response.setContentType(MediaType.APPLICATION_JSON_VALUE);
         objectMapper.writeValue(response.getOutputStream(), new ApiErrorResponse(
-                OffsetDateTime.now(),
-                HttpStatus.UNAUTHORIZED.value(),
                 "UNAUTHORIZED",
                 authException.getMessage(),
-                request.getRequestURI()
+                null
         ));
     }
 }
