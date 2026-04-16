@@ -7,13 +7,16 @@ import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
 import jakarta.persistence.Table;
+import jakarta.persistence.Index;
 import lombok.Getter;
 import lombok.Setter;
 
 @Getter
 @Setter
 @Entity
-@Table(name = "subscriptions")
+@Table(name = "subscriptions", indexes = {
+        @Index(name = "idx_subscriptions_owner_user_id", columnList = "owner_user_id")
+})
 public class SubscriptionEntity extends AuditEntity {
 
     @Id
@@ -28,4 +31,7 @@ public class SubscriptionEntity extends AuditEntity {
 
     @Column(name = "status", nullable = false)
     private Integer status = CommonStatusConstant.STATUS_ACTIVE;
+
+    @Column(name = "owner_user_id")
+    private Long ownerUserId;
 }

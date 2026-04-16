@@ -80,8 +80,9 @@ public class RoleService {
         RoleEntity savedRole = roleRepository.save(roleEntity);
 
         if (!oldStatus.equals(request.getStatus())) {
-            userRepository.findDistinctIdsByRoleId(roleId).forEach(userService::bumpSessionVersion);
-            userRepository.findDistinctIdsByRoleId(roleId).forEach(authSessionService::invalidateUserSessions);
+            List<Long> affectedUserIds = userRepository.findDistinctIdsByRoleId(roleId);
+            affectedUserIds.forEach(userService::bumpSessionVersion);
+            affectedUserIds.forEach(authSessionService::invalidateUserSessions);
         }
 
         return toResponse(savedRole);
@@ -110,8 +111,9 @@ public class RoleService {
 
         roleEntity.setPermissions(new LinkedHashSet<>(permissionEntities));
         RoleEntity savedRole = roleRepository.save(roleEntity);
-        userRepository.findDistinctIdsByRoleId(roleId).forEach(userService::bumpSessionVersion);
-        userRepository.findDistinctIdsByRoleId(roleId).forEach(authSessionService::invalidateUserSessions);
+        List<Long> affectedUserIds = userRepository.findDistinctIdsByRoleId(roleId);
+        affectedUserIds.forEach(userService::bumpSessionVersion);
+        affectedUserIds.forEach(authSessionService::invalidateUserSessions);
         return toResponse(savedRole);
     }
 

@@ -71,6 +71,7 @@ export type Subscription = {
   title: string;
   description: string;
   status: number;
+  ownerUserId: number;
 };
 
 export type PageData<T> = {

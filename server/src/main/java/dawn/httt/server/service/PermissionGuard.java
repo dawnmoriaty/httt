@@ -13,7 +13,7 @@ public class PermissionGuard {
             return false;
         }
 
-        if (authenticatedUser.getRoleCodes() != null && authenticatedUser.getRoleCodes().contains(RoleCodeConstant.SUPER_ADMIN)) {
+        if (isSuperAdmin(authenticatedUser)) {
             return true;
         }
 
@@ -22,6 +22,12 @@ public class PermissionGuard {
 
     public String toPermissionKey(String resource, String action) {
         return normalizeResource(resource) + ":" + normalizeAction(action);
+    }
+
+    public boolean isSuperAdmin(AuthenticatedUser authenticatedUser) {
+        return authenticatedUser != null
+                && authenticatedUser.getRoleCodes() != null
+                && authenticatedUser.getRoleCodes().contains(RoleCodeConstant.SUPER_ADMIN);
     }
 
     private String normalizeResource(String resource) {

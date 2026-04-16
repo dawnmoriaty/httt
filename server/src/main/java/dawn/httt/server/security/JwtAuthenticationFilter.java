@@ -2,7 +2,7 @@ package dawn.httt.server.security;
 
 import com.auth0.jwt.interfaces.DecodedJWT;
 import dawn.httt.server.exception.UnauthorizedException;
-import dawn.httt.server.service.AuthService;
+import dawn.httt.server.service.AuthSnapshotService;
 import dawn.httt.server.service.AuthSessionService;
 import jakarta.servlet.FilterChain;
 import jakarta.servlet.ServletException;
@@ -27,18 +27,18 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
 
     private final JwtTokenProvider jwtTokenProvider;
     private final AuthSessionService authSessionService;
-    private final AuthService authService;
+    private final AuthSnapshotService authSnapshotService;
     private final SecurityAuthenticationEntryPoint securityAuthenticationEntryPoint;
 
     public JwtAuthenticationFilter(
             JwtTokenProvider jwtTokenProvider,
             AuthSessionService authSessionService,
-            AuthService authService,
+            AuthSnapshotService authSnapshotService,
             SecurityAuthenticationEntryPoint securityAuthenticationEntryPoint
     ) {
         this.jwtTokenProvider = jwtTokenProvider;
         this.authSessionService = authSessionService;
-        this.authService = authService;
+        this.authSnapshotService = authSnapshotService;
         this.securityAuthenticationEntryPoint = securityAuthenticationEntryPoint;
     }
 
@@ -96,7 +96,7 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
         if (authSessionService.isRedisEnabled()) {
             Long userId = decodedJWT.getClaim("userId").asLong();
             Long selectedRoleId = decodedJWT.getClaim("selectedRoleId").asLong();
-            AuthenticatedUser freshUser = authService.resolveFreshAuthenticatedUser(userId, selectedRoleId);
+            AuthenticatedUser freshUser = authSnapshotService.resolveFreshAuthenticatedUser(userId, selectedRoleId);
 
             Duration remainingTtl = Duration.between(Instant.now(), decodedJWT.getExpiresAtAsInstant());
             if (!remainingTtl.isNegative() && !remainingTtl.isZero()) {

@@ -30,7 +30,7 @@ export default function SubscriptionsPage() {
 }
 
 function SubscriptionsPageContent() {
-  const { hasPermission } = useAuth();
+  const { hasPermission, user } = useAuth();
   const [page, setPage] = useState(0);
   const [subscriptionPage, setSubscriptionPage] = useState<PageData<Subscription> | null>(null);
   const [selected, setSelected] = useState<Subscription | null>(null);
@@ -47,6 +47,7 @@ function SubscriptionsPageContent() {
   const canDelete = hasPermission("subscription", "DELETE");
   const canImport = hasPermission("subscription", "IMPORT");
   const canExport = hasPermission("subscription", "EXPORT");
+  const isSuperAdmin = user?.roleCodes?.includes("SUPER_ADMIN") ?? false;
 
   const loadSubscriptions = async (targetPage: number) => {
     const data = await apiRequest<PageData<Subscription>>(`/subscriptions?page=${targetPage}&size=10`);
@@ -236,13 +237,16 @@ function SubscriptionsPageContent() {
         <Card className="space-y-4">
           <h2 className="text-lg font-semibold">Danh sach subscription</h2>
           <Table
-            headers={["ID", "Title", "Status", "Action"]}
+            headers={["ID", "Title", "Owner", "Status", "Action"]}
             rows={(subscriptionPage?.content ?? []).map((item) => [
               item.id,
               <div key={`title-${item.id}`}>
                 <p className="font-semibold">{item.title}</p>
                 <p className="text-xs text-[var(--muted)]">{item.description}</p>
               </div>,
+              <span key={`owner-${item.id}`} className="font-mono text-xs text-[var(--muted)]">
+                {item.ownerUserId}
+              </span>,
               <Badge key={`status-${item.id}`} variant={item.status === 1 ? "success" : "danger"}>
                 {toVietnameseStatus(item.status)}
               </Badge>,
@@ -268,6 +272,13 @@ function SubscriptionsPageContent() {
           />
 
           {loading ? <p className="text-sm text-[var(--muted)]">Dang tai du lieu...</p> : null}
+
+          {!isSuperAdmin ? (
+            <Alert
+              variant="info"
+              message="Bạn đang ở chế độ ownership. Chỉ dữ liệu do bạn tạo mới hiển thị và chỉnh sửa được."
+            />
+          ) : null}
         </Card>
 
         <div className="space-y-5">

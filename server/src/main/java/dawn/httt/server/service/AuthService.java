@@ -18,6 +18,7 @@ import dawn.httt.server.exception.UnauthorizedException;
 import dawn.httt.server.repository.RoleRepository;
 import dawn.httt.server.repository.UserRepository;
 import dawn.httt.server.security.AuthenticatedUser;
+import dawn.httt.server.security.CurrentAuthenticatedUserProvider;
 import dawn.httt.server.security.JwtTokenProvider;
 import dawn.httt.server.security.RefreshSession;
 import java.time.Duration;
@@ -25,8 +26,6 @@ import java.time.Instant;
 import java.util.Comparator;
 import java.util.List;
 import java.util.UUID;
-import org.springframework.security.core.Authentication;
-import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -42,6 +41,7 @@ public class AuthService {
     private final AuthSessionService authSessionService;
     private final AppSecurityProperties appSecurityProperties;
     private final PermissionGuard permissionGuard;
+    private final CurrentAuthenticatedUserProvider currentAuthenticatedUserProvider;
 
     public AuthService(
             UserRepository userRepository,
@@ -50,7 +50,8 @@ public class AuthService {
             JwtTokenProvider jwtTokenProvider,
             AuthSessionService authSessionService,
             AppSecurityProperties appSecurityProperties,
-            PermissionGuard permissionGuard
+            PermissionGuard permissionGuard,
+            CurrentAuthenticatedUserProvider currentAuthenticatedUserProvider
     ) {
         this.userRepository = userRepository;
         this.roleRepository = roleRepository;
@@ -59,6 +60,7 @@ public class AuthService {
         this.authSessionService = authSessionService;
         this.appSecurityProperties = appSecurityProperties;
         this.permissionGuard = permissionGuard;
+        this.currentAuthenticatedUserProvider = currentAuthenticatedUserProvider;
     }
 
     @Transactional
@@ -87,7 +89,7 @@ public class AuthService {
     }
 
     public AuthResponse login(LoginRequest request) {
-        UserEntity userEntity = userRepository.findWithRolesByUsername(request.getUsername().trim())
+        UserEntity userEntity = userRepository.findAuthSnapshotByUsername(request.getUsername().trim())
                 .orElseThrow(() -> new UnauthorizedException("INVALID_CREDENTIALS", "Thong tin dang nhap khong hop le."));
 
         if (!passwordEncoder.matches(request.getPassword(), userEntity.getPasswordHash())) {
@@ -105,7 +107,7 @@ public class AuthService {
         RefreshSession refreshSession = authSessionService.getRefreshSession(request.getRefreshToken())
                 .orElseThrow(() -> new UnauthorizedException("INVALID_REFRESH_TOKEN", "Refresh token khong hop le."));
 
-        UserEntity userEntity = userRepository.findWithRolesById(refreshSession.getUserId())
+        UserEntity userEntity = userRepository.findAuthSnapshotById(refreshSession.getUserId())
                 .orElseThrow(() -> new UnauthorizedException("INVALID_REFRESH_TOKEN", "Refresh token khong hop le."));
 
         if (userEntity.getStatus() == null || userEntity.getStatus() != CommonStatusConstant.STATUS_ACTIVE) {
@@ -143,11 +145,7 @@ public class AuthService {
     }
 
     public CurrentUserResponse currentUser() {
-        Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
-        if (authentication == null || !(authentication.getPrincipal() instanceof AuthenticatedUser authenticatedUser)) {
-            throw new UnauthorizedException("UNAUTHORIZED", "Ban chua dang nhap.");
-        }
-
+        AuthenticatedUser authenticatedUser = currentAuthenticatedUserProvider.getCurrentUser();
         return toCurrentUserResponse(authenticatedUser);
     }
 
@@ -174,27 +172,6 @@ public class AuthService {
                 accessDuration.toSeconds(),
                 toCurrentUserResponse(authenticatedUser)
         );
-    }
-
-    @Transactional(readOnly = true)
-    public AuthenticatedUser resolveFreshAuthenticatedUser(Long userId, Long selectedRoleId) {
-        UserEntity userEntity = userRepository.findWithRolesById(userId)
-                .orElseThrow(() -> new UnauthorizedException("USER_NOT_FOUND", "Nguoi dung khong con ton tai."));
-
-        if (userEntity.getStatus() == null || userEntity.getStatus() != CommonStatusConstant.STATUS_ACTIVE) {
-            throw new UnauthorizedException("USER_INACTIVE", "Tai khoan dang khong hoat dong.");
-        }
-
-        RoleEntity selectedRole = userEntity.getRoles().stream()
-                .filter(roleEntity -> roleEntity.getId().equals(selectedRoleId))
-                .findFirst()
-                .orElseThrow(() -> new UnauthorizedException("ROLE_NOT_FOUND", "Role dang nhap khong con ton tai."));
-
-        if (selectedRole.getStatus() == null || selectedRole.getStatus() != CommonStatusConstant.STATUS_ACTIVE) {
-            throw new UnauthorizedException("ROLE_INACTIVE", "Role dang nhap khong con hoat dong.");
-        }
-
-        return buildAuthenticatedUser(userEntity, selectedRole);
     }
 
     private AuthenticatedUser buildAuthenticatedUser(UserEntity userEntity, RoleEntity selectedRole) {

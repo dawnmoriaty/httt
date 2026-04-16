@@ -24,6 +24,12 @@ public interface UserRepository extends JpaRepository<UserEntity, Long> {
     @EntityGraph(attributePaths = {"roles", "roles.permissions"})
     Optional<UserEntity> findWithRolesById(Long id);
 
+    @EntityGraph(attributePaths = {"roles", "roles.permissions"})
+    Optional<UserEntity> findAuthSnapshotByUsername(String username);
+
+    @EntityGraph(attributePaths = {"roles", "roles.permissions"})
+    Optional<UserEntity> findAuthSnapshotById(Long id);
+
     @EntityGraph(attributePaths = {"roles"})
     Page<UserEntity> findAllByOrderByIdAsc(Pageable pageable);
 

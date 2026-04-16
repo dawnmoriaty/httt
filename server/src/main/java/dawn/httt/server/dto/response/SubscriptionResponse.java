@@ -11,4 +11,5 @@ public class SubscriptionResponse {
     private String title;
     private String description;
     private Integer status;
+    private Long ownerUserId;
 }

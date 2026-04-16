@@ -35,6 +35,14 @@ export default function DashboardPage() {
           <p className="mt-2 text-xl font-bold">{user?.username ?? "-"}</p>
         </Card>
       </div>
+
+      <Card className="space-y-2">
+        <h2 className="text-lg font-semibold">Ghi chú phân quyền nâng cao</h2>
+        <p className="text-sm text-[var(--muted)] leading-7">
+          Hệ thống hiện có cả RBAC theo permission và ownership theo dữ liệu. Với module Subscription, user thường chỉ
+          có thể sửa hoặc xóa bản ghi do chính mình tạo. SUPER_ADMIN được xem và thao tác toàn bộ dữ liệu.
+        </p>
+      </Card>
     </div>
   );
 }

@@ -30,6 +30,12 @@ CROSS JOIN permissions p
 WHERE r.code = 'SUPER_ADMIN'
 ON CONFLICT DO NOTHING;
 
+UPDATE subscriptions
+SET owner_user_id = (
+    SELECT id FROM users WHERE username = 'admin' LIMIT 1
+)
+WHERE owner_user_id IS NULL;
+
 INSERT INTO role_permissions (role_id, permission_id)
 SELECT r.id, p.id
 FROM roles r
