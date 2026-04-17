@@ -5,21 +5,18 @@ import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.stereotype.Repository;
 
 import java.util.List;
-import java.util.Optional;
 
 @Repository
 public interface InvoiceRepository extends JpaRepository<InvoiceEntity, Long> {
 
-    List<InvoiceEntity> findBySubscriptionId(Long subscriptionId);
+    List<InvoiceEntity> findByContractId(Long contractId);
 
-    List<InvoiceEntity> findByUserId(Long userId);
-
-    List<InvoiceEntity> findByRoomId(Long roomId);
+    List<InvoiceEntity> findByContract_Id(Long contractId);
 
     List<InvoiceEntity> findByStatus(Integer status);
 
-    Optional<InvoiceEntity> findBySubscriptionIdAndInvoiceNumber(Long subscriptionId, String invoiceNumber);
+    List<InvoiceEntity> findByStatusIn(List<Integer> statuses);
 
-    List<InvoiceEntity> findBySubscriptionIdAndStatusIn(Long subscriptionId, List<Integer> statuses);
+    List<InvoiceEntity> findByBillingYearAndBillingMonth(Integer billingYear, Integer billingMonth);
 
 }

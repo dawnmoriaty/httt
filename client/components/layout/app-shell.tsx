@@ -19,6 +19,7 @@ const navItems: NavItem[] = [
   { href: "/admin/roles", label: "Nhom quyen", resource: "role", action: "VIEW" },
   { href: "/admin/permissions", label: "Danh muc quyen", resource: "permission", action: "VIEW" },
   { href: "/admin/users", label: "Tai khoan", resource: "user", action: "VIEW" },
+  { href: "/tenant-groups", label: "Nguoi thue", resource: "tenant_group", action: "VIEW" },
   { href: "/subscriptions", label: "Subscription", resource: "subscription", action: "VIEW" },
 ];
 

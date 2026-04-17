@@ -1,5 +1,6 @@
 package dawn.httt.server.entity;
 
+import dawn.httt.server.constant.TenantMemberRoleConstant;
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
 import jakarta.persistence.FetchType;
@@ -10,7 +11,7 @@ import jakarta.persistence.JoinColumn;
 import jakarta.persistence.ManyToOne;
 import jakarta.persistence.Table;
 import jakarta.persistence.UniqueConstraint;
-import java.time.Instant;
+import java.time.LocalDate;
 import lombok.Getter;
 import lombok.Setter;
 
@@ -20,7 +21,7 @@ import lombok.Setter;
 @Table(name = "tenant_group_members", uniqueConstraints = {
     @UniqueConstraint(columnNames = {"tenant_group_id", "user_id"})
 })
-public class TenantGroupMemberEntity {
+public class TenantGroupMemberEntity extends AuditEntity {
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
@@ -34,9 +35,21 @@ public class TenantGroupMemberEntity {
     @JoinColumn(name = "user_id", nullable = false)
     private UserEntity user;
 
-    @Column(name = "role", length = 50, nullable = false)
-    private String role = "MEMBER"; // LEADER, MEMBER
+    @Column(name = "member_role", nullable = false)
+    private Integer memberRole = TenantMemberRoleConstant.MEMBER;
 
-    @Column(name = "joined_at", nullable = false)
-    private Instant joinedAt = Instant.now();
+    @Column(name = "joined_at")
+    private LocalDate joinedAt;
+
+    @Column(name = "left_at")
+    private LocalDate leftAt;
+
+    @Column(name = "id_card_number", length = 50)
+    private String idCardNumber;
+
+    @Column(name = "id_card_front", length = 500)
+    private String idCardFront;
+
+    @Column(name = "id_card_back", length = 500)
+    private String idCardBack;
 }

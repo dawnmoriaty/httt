@@ -3,13 +3,11 @@ package dawn.httt.server.controller;
 import dawn.httt.server.common.ApiResponse;
 import dawn.httt.server.common.ApiResponses;
 import dawn.httt.server.constant.PermissionActionConstant;
-import dawn.httt.server.dto.request.SubscriptionExportMailRequest;
 import dawn.httt.server.dto.request.SubscriptionUpsertRequest;
 import dawn.httt.server.dto.response.SubscriptionResponse;
 import dawn.httt.server.security.RequirePermission;
 import dawn.httt.server.service.SubscriptionService;
 import jakarta.validation.Valid;
-import java.util.Map;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.Sort;
@@ -39,13 +37,13 @@ public class SubscriptionController {
     public ResponseEntity<ApiResponse<Page<SubscriptionResponse>>> listSubscriptions(
             @PageableDefault(size = 20, sort = "id", direction = Sort.Direction.DESC) Pageable pageable
     ) {
-        return ApiResponses.ok("Lay danh sach ban ghi mau thanh cong.", subscriptionService.getAll(pageable));
+        return ApiResponses.ok("Lay danh sach tenant subscription thanh cong.", subscriptionService.getAll(pageable));
     }
 
     @PostMapping
     @RequirePermission(resource = "subscription", action = PermissionActionConstant.ADD)
     public ResponseEntity<ApiResponse<SubscriptionResponse>> createSubscription(@Valid @RequestBody SubscriptionUpsertRequest request) {
-        return ApiResponses.created("Tao ban ghi mau thanh cong.", subscriptionService.create(request));
+        return ApiResponses.created("Tao tenant subscription thanh cong.", subscriptionService.create(request));
     }
 
     @PutMapping("/{id}")
@@ -54,7 +52,7 @@ public class SubscriptionController {
             @PathVariable Long id,
             @Valid @RequestBody SubscriptionUpsertRequest request
     ) {
-        return ApiResponses.ok("Cap nhat ban ghi mau thanh cong.", subscriptionService.update(id, request));
+        return ApiResponses.ok("Cap nhat tenant subscription thanh cong.", subscriptionService.update(id, request));
     }
 
     @DeleteMapping("/{id}")
@@ -62,25 +60,5 @@ public class SubscriptionController {
     public ResponseEntity<Void> deleteSubscription(@PathVariable Long id) {
         subscriptionService.delete(id);
         return ApiResponses.noContent();
-    }
-
-    @PostMapping("/import")
-    @RequirePermission(resource = "subscription", action = PermissionActionConstant.IMPORT)
-    public ResponseEntity<ApiResponse<Map<String, Object>>> importSubscription() {
-        return ApiResponses.ok("Import mock thanh cong.", subscriptionService.importSample());
-    }
-
-    @GetMapping("/export")
-    @RequirePermission(resource = "subscription", action = PermissionActionConstant.EXPORT)
-    public ResponseEntity<ApiResponse<Map<String, Object>>> exportSubscription() {
-        return ApiResponses.ok("Export mock thanh cong.", subscriptionService.exportSample());
-    }
-
-    @PostMapping("/export/mail")
-    @RequirePermission(resource = "subscription", action = PermissionActionConstant.EXPORT)
-    public ResponseEntity<ApiResponse<Map<String, Object>>> exportSubscriptionToMail(
-            @Valid @RequestBody SubscriptionExportMailRequest request
-    ) {
-        return ApiResponses.ok("Export va gui email thanh cong.", subscriptionService.exportAndSendByEmail(request.getEmail()));
     }
 }

@@ -1,62 +1,81 @@
 package dawn.httt.server.entity;
 
-import jakarta.persistence.Column;
-import jakarta.persistence.Entity;
-import jakarta.persistence.FetchType;
-import jakarta.persistence.GeneratedValue;
-import jakarta.persistence.GenerationType;
-import jakarta.persistence.Id;
-import jakarta.persistence.JoinColumn;
-import jakarta.persistence.ManyToOne;
-import jakarta.persistence.OneToMany;
-import jakarta.persistence.Table;
-import java.math.BigDecimal;
-import java.time.LocalDate;
-import java.util.LinkedHashSet;
-import java.util.Set;
+import dawn.httt.server.constant.PaymentMethodConstant;
+import jakarta.persistence.*;
 import lombok.Getter;
 import lombok.Setter;
 
+import java.math.BigDecimal;
+import java.time.LocalDateTime;
+import jakarta.persistence.FetchType;
+import jakarta.persistence.ManyToOne;
+
+/**
+ * Phân hệ: Tài chính — từng lần thanh toán cho một hoá đơn.
+ *
+ * Tái sử dụng:
+ *   - AuditEntity:        timestamp tự động.
+ *   - invoiceId       → FK về invoices.id.
+ *   - receivedByUserId → FK về users.id (nhân viên thu tiền — tận dụng UserEntity).
+ *
+ * Thiết kế hỗ trợ thanh toán nhiều lần cho một hoá đơn
+ * (ví dụ: đặt cọc trước, trả đủ sau).
+ * InvoiceService sẽ tổng hợp sum(amount) so với invoice.totalAmount
+ * để cập nhật invoice.status → PAID.
+ */
 @Getter
 @Setter
 @Entity
-@Table(name = "payments")
+@Table(
+    name = "payments",
+    indexes = {
+        @Index(name = "idx_payments_invoice_id",        columnList = "invoice_id"),
+        @Index(name = "idx_payments_received_by",       columnList = "received_by_user_id"),
+        @Index(name = "idx_payments_paid_at",           columnList = "paid_at")
+    }
+)
 public class PaymentEntity extends AuditEntity {
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
-    @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "invoice_id", nullable = false)
-    private InvoiceEntity invoice;
+    /** FK → invoices.id */
+    @Column(name = "invoice_id", nullable = false)
+    private Long invoiceId;
 
-    @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "subscription_id", nullable = false)
-    private SubscriptionEntity subscription;
+    /**
+     * FK → users.id — nhân viên ghi nhận thu tiền.
+     * Tận dụng UserEntity + RBAC (chỉ user có permission finance:ADD mới thu được).
+     */
+    @Column(name = "received_by_user_id", nullable = false)
+    private Long receivedByUserId;
 
+    /** ManyToOne relationship to UserEntity */
     @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "user_id", nullable = false)
+    @JoinColumn(name = "received_by_user_id", nullable = false, insertable = false, updatable = false)
     private UserEntity user;
 
-    @Column(name = "payment_date", nullable = false)
-    private LocalDate paymentDate;
+    /** Số tiền thu được lần này (VND). */
+    @Column(name = "amount", nullable = false, precision = 15, scale = 2)
+    private BigDecimal amount;
 
-    @Column(name = "amount", precision = 15, scale = 2, nullable = false)
-    private BigDecimal amount = BigDecimal.ZERO;
+    /**
+     * Phương thức thanh toán — dùng PaymentMethodConstant.
+     * CASH=1, BANK_TRANSFER=2, E_WALLET=3
+     */
+    @Column(name = "payment_method", nullable = false)
+    private Integer paymentMethod = PaymentMethodConstant.CASH;
 
-    @Column(name = "method", nullable = false, length = 50)
-    private String method; // CASH, BANK_TRANSFER, ONLINE, CHEQUE, OTHER
+    /** Thời điểm thu tiền thực tế (có thể khác createdAt nếu nhập trễ). */
+    @Column(name = "paid_at", nullable = false)
+    private LocalDateTime paidAt;
 
-    @Column(name = "transaction_ref", length = 200)
+    /** Mã tham chiếu giao dịch ngân hàng / ví điện tử (nếu có). */
+    @Column(name = "transaction_ref", length = 100)
     private String transactionRef;
 
-    @Column(name = "status", nullable = false)
-    private Integer status = 1; // 1=PENDING, 2=COMPLETED, 3=FAILED
-
-    @Column(name = "notes", length = 1000)
-    private String notes;
-
-    @OneToMany(mappedBy = "payment", fetch = FetchType.LAZY)
-    private Set<TransactionEntity> transactions = new LinkedHashSet<>();
+    /** Ghi chú. */
+    @Column(name = "note", length = 500)
+    private String note;
 }

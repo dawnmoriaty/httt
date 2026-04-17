@@ -20,9 +20,16 @@ import lombok.Setter;
 @Getter
 @Setter
 @Entity
-@Table(name = "services", uniqueConstraints = {
-    @UniqueConstraint(columnNames = {"subscription_id", "code"})
-})
+@Table(
+    name = "services",
+    uniqueConstraints = {
+        @UniqueConstraint(columnNames = {"subscription_id", "code"})
+    },
+    indexes = {
+        @jakarta.persistence.Index(name = "idx_services_subscription", columnList = "subscription_id"),
+        @jakarta.persistence.Index(name = "idx_services_status", columnList = "status")
+    }
+)
 public class ServiceEntity extends AuditEntity {
 
     @Id

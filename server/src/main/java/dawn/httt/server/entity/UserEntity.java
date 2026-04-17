@@ -50,15 +50,6 @@ public class UserEntity extends AuditEntity {
     @Column(name = "phone", length = 20)
     private String phone;
 
-    @Column(name = "id_card", length = 50)
-    private String idCard;
-
-    @Column(name = "address", length = 500)
-    private String address;
-
-    @Column(name = "relationship_to_owner", length = 50)
-    private String relationshipToOwner; // OWNER, MANAGER, TENANT, GUEST
-
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "subscription_id")
     private SubscriptionEntity subscription;
@@ -72,18 +63,6 @@ public class UserEntity extends AuditEntity {
     private Set<RoleEntity> roles = new LinkedHashSet<>();
 
     // Relationships for tenant-related data
-    @OneToMany(mappedBy = "occupiedByUser", fetch = FetchType.LAZY)
-    private Set<RoomEntity> occupiedRooms = new LinkedHashSet<>();
-
-    @OneToMany(mappedBy = "user", fetch = FetchType.LAZY)
-    private Set<ServiceUsageEntity> serviceUsages = new LinkedHashSet<>();
-
-    @OneToMany(mappedBy = "user", fetch = FetchType.LAZY)
-    private Set<InvoiceEntity> invoices = new LinkedHashSet<>();
-
-    @OneToMany(mappedBy = "user", fetch = FetchType.LAZY)
-    private Set<PaymentEntity> payments = new LinkedHashSet<>();
-
     @OneToMany(mappedBy = "user", fetch = FetchType.LAZY)
     private Set<ContractEntity> contracts = new LinkedHashSet<>();
 

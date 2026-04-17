@@ -9,9 +9,11 @@ import org.springframework.stereotype.Repository;
 public interface AssetRepository extends JpaRepository<AssetEntity, Long> {
     List<AssetEntity> findByRoomId(Long roomId);
 
-    List<AssetEntity> findBySubscriptionId(Long subscriptionId);
+    List<AssetEntity> findByAssetType(Integer assetType);
 
-    List<AssetEntity> findBySubscriptionIdAndType(Long subscriptionId, String type);
+    List<AssetEntity> findByRoomIdAndAssetType(Long roomId, Integer assetType);
 
-    List<AssetEntity> findByRoomIdAndStatus(Long roomId, Integer status);
+    List<AssetEntity> findByRoomIdAndConditionStatus(Long roomId, Integer conditionStatus);
+
+    List<AssetEntity> findByConditionStatus(Integer conditionStatus);
 }

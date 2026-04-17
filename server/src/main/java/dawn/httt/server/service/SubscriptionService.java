@@ -5,11 +5,9 @@ import dawn.httt.server.dto.response.SubscriptionResponse;
 import dawn.httt.server.entity.SubscriptionEntity;
 import dawn.httt.server.exception.ForbiddenException;
 import dawn.httt.server.exception.NotFoundException;
-import dawn.httt.server.integration.email.EmailSender;
 import dawn.httt.server.repository.SubscriptionRepository;
 import dawn.httt.server.security.AuthenticatedUser;
 import dawn.httt.server.security.CurrentAuthenticatedUserProvider;
-import java.util.Map;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
@@ -18,18 +16,15 @@ import org.springframework.stereotype.Service;
 public class SubscriptionService {
 
     private final SubscriptionRepository subscriptionRepository;
-    private final EmailSender emailSender;
     private final CurrentAuthenticatedUserProvider currentAuthenticatedUserProvider;
     private final PermissionGuard permissionGuard;
 
     public SubscriptionService(
             SubscriptionRepository subscriptionRepository,
-            EmailSender emailSender,
             CurrentAuthenticatedUserProvider currentAuthenticatedUserProvider,
             PermissionGuard permissionGuard
     ) {
         this.subscriptionRepository = subscriptionRepository;
-        this.emailSender = emailSender;
         this.currentAuthenticatedUserProvider = currentAuthenticatedUserProvider;
         this.permissionGuard = permissionGuard;
     }
@@ -68,33 +63,6 @@ public class SubscriptionService {
         subscriptionRepository.delete(subscriptionEntity);
     }
 
-    public Map<String, Object> importSample() {
-        return Map.of(
-                "message", "Import mock thanh cong.",
-                "imported", 3
-        );
-    }
-
-    public Map<String, Object> exportSample() {
-        return Map.of(
-                "message", "Export mock thanh cong.",
-                "total", subscriptionRepository.count()
-        );
-    }
-
-    public Map<String, Object> exportAndSendByEmail(String email) {
-        long total = subscriptionRepository.count();
-        String subject = "HTTT export result";
-        String content = "Tong so ban ghi subscription hien tai: " + total;
-        emailSender.send(email, subject, content);
-
-        return Map.of(
-                "message", "Export va gui email thanh cong.",
-                "total", total,
-                "recipient", email
-        );
-    }
-
     private SubscriptionResponse toResponse(SubscriptionEntity subscriptionEntity) {
         return SubscriptionResponse.builder()
                 .id(subscriptionEntity.getId())
@@ -108,7 +76,7 @@ public class SubscriptionService {
     private SubscriptionEntity getAuthorizedSubscription(Long id) {
         AuthenticatedUser currentUser = currentAuthenticatedUserProvider.getCurrentUser();
         SubscriptionEntity subscriptionEntity = subscriptionRepository.findById(id)
-                .orElseThrow(() -> new NotFoundException("SUBSCRIPTION_NOT_FOUND", "Khong tim thay ban ghi mau."));
+                .orElseThrow(() -> new NotFoundException("SUBSCRIPTION_NOT_FOUND", "Khong tim thay tenant subscription."));
 
         if (permissionGuard.isSuperAdmin(currentUser)) {
             return subscriptionEntity;

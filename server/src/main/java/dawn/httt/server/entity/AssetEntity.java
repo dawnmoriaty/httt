@@ -1,61 +1,65 @@
 package dawn.httt.server.entity;
 
-import jakarta.persistence.Column;
-import jakarta.persistence.Entity;
-import jakarta.persistence.FetchType;
-import jakarta.persistence.GeneratedValue;
-import jakarta.persistence.GenerationType;
-import jakarta.persistence.Id;
-import jakarta.persistence.JoinColumn;
-import jakarta.persistence.ManyToOne;
-import jakarta.persistence.OneToMany;
-import jakarta.persistence.Table;
-import java.math.BigDecimal;
-import java.time.LocalDate;
-import java.util.LinkedHashSet;
-import java.util.Set;
+import dawn.httt.server.constant.AssetConditionConstant;
+import jakarta.persistence.*;
 import lombok.Getter;
 import lombok.Setter;
 
+/**
+ * Phân hệ: Cơ sở vật chất — thiết bị / tài sản gắn với phòng.
+ * Ví dụ: máy lạnh, camera, bình nóng lạnh, khóa thông minh.
+ *
+ * Tái sử dụng:
+ *   - AuditEntity: timestamp tự động.
+ *   - FK room_id → RoomEntity: tận dụng index idx_rooms_code để join nhanh.
+ */
 @Getter
 @Setter
 @Entity
-@Table(name = "assets")
+@Table(
+    name = "assets",
+    indexes = {
+        @Index(name = "idx_assets_room_id", columnList = "room_id"),
+        @Index(name = "idx_assets_asset_type", columnList = "asset_type")
+    }
+)
 public class AssetEntity extends AuditEntity {
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
-    @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "room_id", nullable = false)
-    private RoomEntity room;
+    /**
+     * FK → rooms.id.
+     * Lưu raw id thay vì @ManyToOne để nhất quán với pattern SubscriptionEntity
+     * (ownerUserId). Nếu sau này cần join, dùng JPQL với id.
+     */
+    @Column(name = "room_id", nullable = false)
+    private Long roomId;
 
-    @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "subscription_id", nullable = false)
-    private SubscriptionEntity subscription;
-
+    /** Tên tài sản, ví dụ: "Máy lạnh Daikin 1.5HP". */
     @Column(name = "name", nullable = false, length = 200)
     private String name;
 
-    @Column(name = "type", nullable = false, length = 50)
-    private String type; // FURNITURE, EQUIPMENT, FIXTURE, OTHER
+    /**
+     * Loại tài sản (mã số tự do, không cần constant vì có thể mở rộng).
+     * Ví dụ: 1=Điều hoà, 2=Camera, 3=Bình nóng lạnh, 4=Khoá, 5=Khác.
+     */
+    @Column(name = "asset_type", nullable = false)
+    private Integer assetType;
 
-    @Column(name = "quantity", nullable = false)
-    private Integer quantity = 1;
+    /** Số serial / mã vật tư để phân biệt từng cái. */
+    @Column(name = "serial_number", length = 100)
+    private String serialNumber;
 
-    @Column(name = "purchase_date")
-    private LocalDate purchaseDate;
+    /**
+     * Tình trạng vật lý — dùng AssetConditionConstant.
+     * GOOD=1, WORN=2, BROKEN=3, DISPOSED=4
+     */
+    @Column(name = "condition_status", nullable = false)
+    private Integer conditionStatus = AssetConditionConstant.GOOD;
 
-    @Column(name = "value", precision = 15, scale = 2)
-    private BigDecimal value = BigDecimal.ZERO;
-
-    @Column(name = "status", nullable = false)
-    private Integer status = 1; // 1=ACTIVE, 2=DAMAGED, 3=MAINTENANCE, 4=DISPOSED
-
-    @Column(name = "description", length = 1000)
-    private String description;
-
-    @OneToMany(mappedBy = "asset", fetch = FetchType.LAZY)
-    private Set<AssetMaintenanceEntity> maintenances = new LinkedHashSet<>();
+    /** Ghi chú (vị trí lắp đặt, lịch bảo trì …). */
+    @Column(name = "note", length = 500)
+    private String note;
 }

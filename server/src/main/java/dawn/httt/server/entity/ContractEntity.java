@@ -1,72 +1,109 @@
 package dawn.httt.server.entity;
 
-import jakarta.persistence.Column;
-import jakarta.persistence.Entity;
-import jakarta.persistence.FetchType;
-import jakarta.persistence.GeneratedValue;
-import jakarta.persistence.GenerationType;
-import jakarta.persistence.Id;
-import jakarta.persistence.JoinColumn;
-import jakarta.persistence.ManyToOne;
-import jakarta.persistence.OneToMany;
-import jakarta.persistence.OneToOne;
-import jakarta.persistence.Table;
-import jakarta.persistence.UniqueConstraint;
-import java.math.BigDecimal;
-import java.time.LocalDate;
-import java.util.LinkedHashSet;
-import java.util.Set;
+import dawn.httt.server.constant.ContractStatusConstant;
+import jakarta.persistence.*;
 import lombok.Getter;
 import lombok.Setter;
 
+import java.math.BigDecimal;
+import java.time.LocalDate;
+import jakarta.persistence.FetchType;
+import jakarta.persistence.ManyToOne;
+
+/**
+ * Phân hệ: Hợp đồng — trung tâm liên kết toàn bộ hệ thống.
+ *
+ * Tái sử dụng:
+ *   - AuditEntity:         timestamp tự động.
+ *   - roomId          → FK về rooms.id       (Cơ sở vật chất).
+ *   - tenantGroupId   → FK về tenant_groups.id (Khách hàng).
+ *   - createdByUserId → FK về users.id        (nhân viên tạo HĐ, dùng UserEntity).
+ *
+ * Quan hệ ngược:
+ *   ContractEntity 1 --- N ServiceUsageEntity  (Dịch vụ)
+ *   ContractEntity 1 --- N InvoiceEntity        (Tài chính)
+ *
+ * Khi ContractEntity chuyển sang ACTIVE → RoomEntity.status = OCCUPIED.
+ * Khi ContractEntity chuyển sang EXPIRED/TERMINATED → RoomEntity.status = VACANT.
+ * Logic này nằm trong ContractService, không hard-code ở đây.
+ */
 @Getter
 @Setter
 @Entity
-@Table(name = "contracts", uniqueConstraints = {
-    @UniqueConstraint(columnNames = {"subscription_id", "contract_number"})
-})
+@Table(
+    name = "contracts",
+    indexes = {
+        @Index(name = "idx_contracts_contract_no",    columnList = "contract_no",    unique = true),
+        @Index(name = "idx_contracts_room_id",         columnList = "room_id"),
+        @Index(name = "idx_contracts_tenant_group_id", columnList = "tenant_group_id"),
+        @Index(name = "idx_contracts_status",          columnList = "status"),
+        @Index(name = "idx_contracts_end_date",        columnList = "end_date")   // phục vụ job cảnh báo sắp hết hạn
+    }
+)
 public class ContractEntity extends AuditEntity {
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
-    @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "subscription_id", nullable = false)
-    private SubscriptionEntity subscription;
+    /** Số hợp đồng hiển thị, ví dụ: "HD-2025-001". */
+    @Column(name = "contract_no", nullable = false, unique = true, length = 30)
+    private String contractNo;
+
+    /** FK → rooms.id */
+    @Column(name = "room_id", nullable = false)
+    private Long roomId;
 
     @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "room_id", nullable = false)
+    @JoinColumn(name = "room_id", nullable = false, insertable = false, updatable = false)
     private RoomEntity room;
 
+    /** FK → tenant_groups.id */
+    @Column(name = "tenant_group_id", nullable = false)
+    private Long tenantGroupId;
+
     @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "user_id", nullable = false)
+    @JoinColumn(name = "tenant_group_id", nullable = false, insertable = false, updatable = false)
+    private TenantGroupEntity tenantGroup;
+
+    /**
+     * FK → users.id — nhân viên quản lý lập hợp đồng.
+     * Tận dụng UserEntity + RBAC (chỉ user có permission contract:ADD mới tạo được).
+     */
+    @Column(name = "created_by_user_id", nullable = false)
+    private Long createdByUserId;
+
+    /** ManyToOne relationship to UserEntity */
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "created_by_user_id", nullable = false, insertable = false, updatable = false)
     private UserEntity user;
 
-    @Column(name = "contract_number", nullable = false, length = 100)
-    private String contractNumber;
+    /**
+     * Giá thuê đàm phán thực tế (VND/tháng).
+     * Có thể khác RoomEntity.basePrice khi có khuyến mãi.
+     */
+    @Column(name = "rent_price", nullable = false, precision = 15, scale = 2)
+    private BigDecimal rentPrice;
 
+    @Column(name = "deposit_amount", precision = 15, scale = 2)
+    private BigDecimal depositAmount = BigDecimal.ZERO;
+
+    /** Ngày bắt đầu hiệu lực. */
     @Column(name = "start_date", nullable = false)
     private LocalDate startDate;
 
+    /** Ngày kết thúc hợp đồng. */
     @Column(name = "end_date", nullable = false)
     private LocalDate endDate;
 
-    @Column(name = "rent_amount", precision = 15, scale = 2, nullable = false)
-    private BigDecimal rentAmount = BigDecimal.ZERO;
-
+    /**
+     * Trạng thái — dùng ContractStatusConstant.
+     * DRAFT=1, ACTIVE=2, EXPIRED=3, TERMINATED=4
+     */
     @Column(name = "status", nullable = false)
-    private Integer status = 1; // 1=DRAFT, 2=ACTIVE, 3=EXPIRED, 4=TERMINATED, 5=RENEWED
+    private Integer status = ContractStatusConstant.DRAFT;
 
-    @Column(name = "created_date", nullable = false)
-    private LocalDate createdDate;
-
-    @OneToMany(mappedBy = "contract", fetch = FetchType.LAZY)
-    private Set<ContractTermEntity> terms = new LinkedHashSet<>();
-
-    @OneToMany(mappedBy = "contract", fetch = FetchType.LAZY)
-    private Set<InvoiceEntity> invoices = new LinkedHashSet<>();
-
-    @OneToOne(mappedBy = "contract", fetch = FetchType.LAZY)
-    private ContractFileEntity file;
+    /** Điều khoản / ghi chú bổ sung. */
+    @Column(name = "note", length = 2000)
+    private String note;
 }

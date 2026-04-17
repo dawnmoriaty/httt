@@ -1,91 +1,104 @@
 package dawn.httt.server.entity;
 
-import jakarta.persistence.Column;
-import jakarta.persistence.Entity;
-import jakarta.persistence.FetchType;
-import jakarta.persistence.GeneratedValue;
-import jakarta.persistence.GenerationType;
-import jakarta.persistence.Id;
-import jakarta.persistence.JoinColumn;
-import jakarta.persistence.JoinTable;
-import jakarta.persistence.ManyToMany;
-import jakarta.persistence.ManyToOne;
-import jakarta.persistence.OneToMany;
-import jakarta.persistence.Table;
-import jakarta.persistence.UniqueConstraint;
-import java.math.BigDecimal;
-import java.time.LocalDate;
+import dawn.httt.server.constant.InvoiceStatusConstant;
+import jakarta.persistence.*;
 import java.util.LinkedHashSet;
 import java.util.Set;
 import lombok.Getter;
 import lombok.Setter;
 
+import java.math.BigDecimal;
+import java.time.LocalDate;
+
+/**
+ * Phân hệ: Tài chính — hoá đơn tổng hợp hàng tháng cho một hợp đồng.
+ *
+ * Tái sử dụng:
+ *   - AuditEntity:  timestamp tự động.
+ *   - contractId → FK về contracts.id (biết phòng + nhóm thuê + giá thuê qua HĐ).
+ *
+ * Luồng tạo hoá đơn (nằm trong InvoiceService):
+ *   1. Lấy ContractEntity (rentPrice).
+ *   2. Tổng hợp ServiceUsageEntity cùng tháng → serviceAmount.
+ *   3. totalAmount = rentAmount + serviceAmount.
+ *   4. Lưu InvoiceEntity, status = UNPAID.
+ *
+ * Quan hệ ngược: InvoiceEntity 1 --- N PaymentEntity.
+ *
+ * Unique constraint: mỗi hợp đồng chỉ có 1 hoá đơn / tháng.
+ */
 @Getter
 @Setter
 @Entity
-@Table(name = "invoices", uniqueConstraints = {
-    @UniqueConstraint(columnNames = {"subscription_id", "invoice_number"})
-})
+@Table(
+    name = "invoices",
+    uniqueConstraints = @UniqueConstraint(
+        name = "uq_invoices_contract_month",
+        columnNames = {"contract_id", "billing_year", "billing_month"}
+    ),
+    indexes = {
+        @Index(name = "idx_invoices_invoice_no",   columnList = "invoice_no",   unique = true),
+        @Index(name = "idx_invoices_contract_id",  columnList = "contract_id"),
+        @Index(name = "idx_invoices_status",       columnList = "status"),
+        @Index(name = "idx_invoices_due_date",     columnList = "due_date")   // job nhắc nhở quá hạn
+    }
+)
 public class InvoiceEntity extends AuditEntity {
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
-    @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "subscription_id", nullable = false)
-    private SubscriptionEntity subscription;
+    /** Số hoá đơn hiển thị, ví dụ: "INV-2025-05-001". */
+    @Column(name = "invoice_no", nullable = false, unique = true, length = 30)
+    private String invoiceNo;
+
+    /** FK → contracts.id */
+    @Column(name = "contract_id", nullable = false)
+    private Long contractId;
 
     @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "user_id", nullable = false)
-    private UserEntity user;
-
-    @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "room_id", nullable = false)
-    private RoomEntity room;
-
-    @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "contract_id")
+    @JoinColumn(name = "contract_id", nullable = false, insertable = false, updatable = false)
     private ContractEntity contract;
 
-    @Column(name = "invoice_number", nullable = false, length = 100)
-    private String invoiceNumber;
+    /** Tháng tính phí (1–12). */
+    @Column(name = "billing_month", nullable = false)
+    private Integer billingMonth;
 
-    @Column(name = "period_start", nullable = false)
-    private LocalDate periodStart;
+    /** Năm tính phí. */
+    @Column(name = "billing_year", nullable = false)
+    private Integer billingYear;
 
-    @Column(name = "period_end", nullable = false)
-    private LocalDate periodEnd;
+    /**
+     * Tiền thuê phòng tháng này — snapshot từ ContractEntity.rentPrice.
+     * Lưu snapshot để hoá đơn không thay đổi nếu hợp đồng điều chỉnh sau.
+     */
+    @Column(name = "rent_amount", nullable = false, precision = 15, scale = 2)
+    private BigDecimal rentAmount;
 
-    @Column(name = "issue_date", nullable = false)
-    private LocalDate issueDate;
+    /** Tổng tiền dịch vụ tháng này — tổng từ ServiceUsageEntity. */
+    @Column(name = "service_amount", nullable = false, precision = 15, scale = 2)
+    private BigDecimal serviceAmount = BigDecimal.ZERO;
 
+    /** Tổng cộng = rentAmount + serviceAmount. */
+    @Column(name = "total_amount", nullable = false, precision = 15, scale = 2)
+    private BigDecimal totalAmount;
+
+    /** Hạn thanh toán. */
     @Column(name = "due_date", nullable = false)
     private LocalDate dueDate;
 
-    @Column(name = "subtotal_rent", precision = 15, scale = 2)
-    private BigDecimal subtotalRent = BigDecimal.ZERO;
-
-    @Column(name = "subtotal_services", precision = 15, scale = 2)
-    private BigDecimal subtotalServices = BigDecimal.ZERO;
-
-    @Column(name = "total_amount", precision = 15, scale = 2)
-    private BigDecimal totalAmount = BigDecimal.ZERO;
-
+    /**
+     * Trạng thái — dùng InvoiceStatusConstant.
+     * UNPAID=1, PAID=2, OVERDUE=3, CANCELLED=4
+     */
     @Column(name = "status", nullable = false)
-    private Integer status = 1; // 1=DRAFT, 2=ISSUED, 3=PARTIALLY_PAID, 4=PAID, 5=OVERDUE, 6=CANCELLED
+    private Integer status = InvoiceStatusConstant.UNPAID;
 
-    @Column(name = "notes", length = 1000)
-    private String notes;
+    /** Ghi chú (giảm giá, phụ thu …). */
+    @Column(name = "note", length = 1000)
+    private String note;
 
     @OneToMany(mappedBy = "invoice", fetch = FetchType.LAZY)
-    private Set<PaymentEntity> payments = new LinkedHashSet<>();
-
-    @ManyToMany(fetch = FetchType.LAZY)
-    @JoinTable(
-        name = "invoice_service_usage",
-        joinColumns = @JoinColumn(name = "invoice_id"),
-        inverseJoinColumns = @JoinColumn(name = "service_usage_id")
-    )
-    private Set<ServiceUsageEntity> serviceUsages = new LinkedHashSet<>();
+    private Set<InvoiceItemEntity> items = new LinkedHashSet<>();
 }

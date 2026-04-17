@@ -10,12 +10,12 @@ import java.util.Optional;
 @Repository
 public interface ServiceRepository extends JpaRepository<ServiceEntity, Long> {
 
-    List<ServiceEntity> findBySubscriptionId(Long subscriptionId);
+    List<ServiceEntity> findBySubscription_Id(Long subscriptionId);
 
-    Optional<ServiceEntity> findBySubscriptionIdAndCode(Long subscriptionId, String code);
+    Optional<ServiceEntity> findBySubscription_IdAndCode(Long subscriptionId, String code);
 
     List<ServiceEntity> findByType(String type);
 
-    List<ServiceEntity> findBySubscriptionIdAndStatus(Long subscriptionId, Integer status);
+    List<ServiceEntity> findBySubscription_IdAndStatus(Long subscriptionId, Integer status);
 
 }

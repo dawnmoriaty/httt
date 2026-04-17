@@ -16,7 +16,12 @@ public class JwtTokenProviderImpl implements JwtTokenProvider {
     private final JWTVerifier jwtVerifier;
 
     public JwtTokenProviderImpl(AppSecurityProperties appSecurityProperties) {
-        this.algorithm = Algorithm.HMAC512(appSecurityProperties.getJwtSecret());
+        String jwtSecret = appSecurityProperties.getJwtSecret();
+        if (jwtSecret == null || jwtSecret.trim().length() < 32) {
+            throw new IllegalStateException("JWT secret must be at least 32 characters.");
+        }
+
+        this.algorithm = Algorithm.HMAC512(jwtSecret);
         this.jwtVerifier = JWT.require(algorithm).build();
     }
 

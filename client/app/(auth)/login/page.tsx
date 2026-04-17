@@ -55,7 +55,7 @@ function LoginForm() {
         <div className="space-y-2">
           <p className="text-xs font-semibold uppercase tracking-[0.22em] text-[var(--muted)]">HTTT Monolith</p>
           <h1 className="text-2xl font-bold text-[var(--foreground)]">Dang nhap he thong RBAC</h1>
-          <p className="text-sm text-[var(--muted)]">Su dung tai khoan duoc seed san de quan tri role, user va permission.</p>
+          <p className="text-sm text-[var(--muted)]">Su dung tai khoan admin seeded de quan tri role, user, permission va module nguoi thue.</p>
         </div>
 
         {message ? <Alert variant="error" message={message} /> : null}

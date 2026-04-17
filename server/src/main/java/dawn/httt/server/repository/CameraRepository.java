@@ -10,11 +10,11 @@ import java.util.Optional;
 @Repository
 public interface CameraRepository extends JpaRepository<CameraEntity, Long> {
 
-    List<CameraEntity> findBySubscriptionId(Long subscriptionId);
+    List<CameraEntity> findBySubscription_Id(Long subscriptionId);
 
-    List<CameraEntity> findByRoomId(Long roomId);
+    List<CameraEntity> findByRoom_Id(Long roomId);
 
-    Optional<CameraEntity> findBySubscriptionIdAndCode(Long subscriptionId, String code);
+    Optional<CameraEntity> findBySubscription_IdAndCode(Long subscriptionId, String code);
 
     List<CameraEntity> findByStatus(Integer status);
 

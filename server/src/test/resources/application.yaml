@@ -21,11 +21,6 @@ spring:
 
 app:
   security:
-    jwt-secret: test-secret-key
+    jwt-secret: test-secret-key-minimum-32-chars-123
     access-token-duration: PT30M
     refresh-token-duration: P7D
-  bootstrap:
-    admin-username: admin
-    admin-password: admin123
-    admin-email: admin@test.local
-    admin-full-name: Test Admin

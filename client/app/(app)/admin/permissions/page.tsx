@@ -4,6 +4,7 @@ import { useEffect, useMemo, useState } from "react";
 import { AuthGuard } from "@/components/auth/auth-guard";
 import { Alert } from "@/components/ui/alert";
 import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Field, TextInput } from "@/components/ui/field";
 import { Pagination } from "@/components/ui/pagination";
@@ -12,6 +13,15 @@ import { useToast } from "@/components/ui/toast-provider";
 import { apiRequest, ApiClientError } from "@/lib/api-client";
 import { toVietnameseStatus } from "@/lib/format";
 import type { PageData, Permission } from "@/lib/types";
+
+type PermissionForm = {
+  moduleCode: string;
+  moduleName: string;
+  resourceCode: string;
+  resourceName: string;
+  actionCode: string;
+  actionName: string;
+};
 
 export default function PermissionsPage() {
   return (
@@ -25,8 +35,18 @@ function PermissionsPageContent() {
   const [page, setPage] = useState(0);
   const [permissionPage, setPermissionPage] = useState<PageData<Permission> | null>(null);
   const [query, setQuery] = useState("");
+  const [form, setForm] = useState<PermissionForm>({
+    moduleCode: "",
+    moduleName: "",
+    resourceCode: "",
+    resourceName: "",
+    actionCode: "",
+    actionName: "",
+  });
   const [loading, setLoading] = useState(false);
+  const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [message, setMessage] = useState<string | null>(null);
   const { pushToast } = useToast();
 
   const loadPermissions = async (targetPage: number) => {
@@ -55,6 +75,41 @@ function PermissionsPageContent() {
 
     void run();
   }, [page]);
+
+  const onCreatePermission = async (event: React.FormEvent<HTMLFormElement>) => {
+    event.preventDefault();
+    setSaving(true);
+    setError(null);
+    setMessage(null);
+
+    try {
+      await apiRequest<Permission>("/admin/permissions", {
+        method: "POST",
+        body: form,
+      });
+      setForm({
+        moduleCode: "",
+        moduleName: "",
+        resourceCode: "",
+        resourceName: "",
+        actionCode: "",
+        actionName: "",
+      });
+      setMessage("Tao permission thanh cong.");
+      pushToast("Tạo permission thành công.", "success");
+      await loadPermissions(page);
+    } catch (apiError) {
+      if (apiError instanceof ApiClientError) {
+        setError(apiError.message);
+        pushToast(apiError.message, "error");
+      } else {
+        setError("Tao permission that bai.");
+        pushToast("Tạo permission thất bại.", "error");
+      }
+    } finally {
+      setSaving(false);
+    }
+  };
 
   const rows = useMemo(() => {
     const source = permissionPage?.content ?? [];
@@ -90,6 +145,60 @@ function PermissionsPageContent() {
       </div>
 
       {error ? <Alert variant="error" message={error} /> : null}
+      {message ? <Alert variant="success" message={message} /> : null}
+
+      <Card className="space-y-4">
+        <h2 className="text-lg font-semibold">Tao permission moi</h2>
+        <form className="grid gap-3 md:grid-cols-3" onSubmit={onCreatePermission}>
+          <Field label="Module code">
+            <TextInput
+              value={form.moduleCode}
+              onChange={(event) => setForm((prev) => ({ ...prev, moduleCode: event.target.value }))}
+              required
+            />
+          </Field>
+          <Field label="Module name">
+            <TextInput
+              value={form.moduleName}
+              onChange={(event) => setForm((prev) => ({ ...prev, moduleName: event.target.value }))}
+              required
+            />
+          </Field>
+          <Field label="Resource code">
+            <TextInput
+              value={form.resourceCode}
+              onChange={(event) => setForm((prev) => ({ ...prev, resourceCode: event.target.value }))}
+              required
+            />
+          </Field>
+          <Field label="Resource name">
+            <TextInput
+              value={form.resourceName}
+              onChange={(event) => setForm((prev) => ({ ...prev, resourceName: event.target.value }))}
+              required
+            />
+          </Field>
+          <Field label="Action code">
+            <TextInput
+              value={form.actionCode}
+              onChange={(event) => setForm((prev) => ({ ...prev, actionCode: event.target.value }))}
+              required
+            />
+          </Field>
+          <Field label="Action name">
+            <TextInput
+              value={form.actionName}
+              onChange={(event) => setForm((prev) => ({ ...prev, actionName: event.target.value }))}
+              required
+            />
+          </Field>
+          <div className="md:col-span-3">
+            <Button type="submit" loading={saving}>
+              Tao permission
+            </Button>
+          </div>
+        </form>
+      </Card>
 
       <Card className="space-y-4">
         <Field label="Tim nhanh theo module / resource / action">

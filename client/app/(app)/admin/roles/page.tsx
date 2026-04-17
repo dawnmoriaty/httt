@@ -20,6 +20,13 @@ type RoleForm = {
   description: string;
 };
 
+type ModuleGrantForm = {
+  moduleCode: string;
+  moduleName: string;
+  resourceCode: string;
+  resourceName: string;
+};
+
 export default function RolesPage() {
   return (
     <AuthGuard requiredPermission={{ resource: "role", action: "VIEW" }}>
@@ -35,6 +42,12 @@ function RolesPageContent() {
   const [selectedRole, setSelectedRole] = useState<Role | null>(null);
   const [selectedPermissionIds, setSelectedPermissionIds] = useState<number[]>([]);
   const [form, setForm] = useState<RoleForm>({ code: "", name: "", description: "" });
+  const [moduleGrantForm, setModuleGrantForm] = useState<ModuleGrantForm>({
+    moduleCode: "",
+    moduleName: "",
+    resourceCode: "",
+    resourceName: "",
+  });
   const [loading, setLoading] = useState(false);
   const [saving, setSaving] = useState(false);
   const [message, setMessage] = useState<string | null>(null);
@@ -165,6 +178,57 @@ function RolesPageContent() {
     }
   };
 
+  const onGrantModule = async (event: React.FormEvent<HTMLFormElement>) => {
+    event.preventDefault();
+    if (!selectedRole) {
+      setError("Hay chon role de cap module.");
+      pushToast("Hãy chọn role để cấp module.", "error");
+      return;
+    }
+
+    setSaving(true);
+    setError(null);
+    setMessage(null);
+
+    try {
+      await apiRequest(`/admin/tenant-access/roles/${selectedRole.id}/grant-module`, {
+        method: "POST",
+        body: {
+          moduleCode: moduleGrantForm.moduleCode,
+          moduleName: moduleGrantForm.moduleName,
+          resourceCode: moduleGrantForm.resourceCode,
+          resourceName: moduleGrantForm.resourceName,
+          actions: [
+            { actionCode: "VIEW", actionName: "Xem" },
+            { actionCode: "ADD", actionName: "Them" },
+            { actionCode: "UPDATE", actionName: "Sua" },
+            { actionCode: "DELETE", actionName: "Xoa" },
+          ],
+        },
+      });
+
+      setModuleGrantForm({
+        moduleCode: "",
+        moduleName: "",
+        resourceCode: "",
+        resourceName: "",
+      });
+      await Promise.all([loadRoles(page), loadPermissions()]);
+      setMessage("Cap module cho role thanh cong.");
+      pushToast("Cấp module cho role thành công.", "success");
+    } catch (apiError) {
+      if (apiError instanceof ApiClientError) {
+        setError(apiError.message);
+        pushToast(apiError.message, "error");
+      } else {
+        setError("Cap module that bai.");
+        pushToast("Cấp module thất bại.", "error");
+      }
+    } finally {
+      setSaving(false);
+    }
+  };
+
   return (
     <div className="space-y-5">
       <div>
@@ -283,6 +347,46 @@ function RolesPageContent() {
         <Button onClick={onAssignPermissions} disabled={!selectedRole || loading} loading={saving}>
           Luu phan quyen role
         </Button>
+      </Card>
+
+      <Card className="space-y-4">
+        <h2 className="text-lg font-semibold">Cap module moi cho role</h2>
+        <p className="text-sm text-[var(--muted)]">Them nhanh permission cho phan he moi, sau do co the tinh chinh trong matrix.</p>
+        <form className="grid gap-3 md:grid-cols-4" onSubmit={onGrantModule}>
+          <Field label="Module code">
+            <TextInput
+              value={moduleGrantForm.moduleCode}
+              onChange={(event) => setModuleGrantForm((prev) => ({ ...prev, moduleCode: event.target.value }))}
+              required
+            />
+          </Field>
+          <Field label="Module name">
+            <TextInput
+              value={moduleGrantForm.moduleName}
+              onChange={(event) => setModuleGrantForm((prev) => ({ ...prev, moduleName: event.target.value }))}
+              required
+            />
+          </Field>
+          <Field label="Resource code">
+            <TextInput
+              value={moduleGrantForm.resourceCode}
+              onChange={(event) => setModuleGrantForm((prev) => ({ ...prev, resourceCode: event.target.value }))}
+              required
+            />
+          </Field>
+          <Field label="Resource name">
+            <TextInput
+              value={moduleGrantForm.resourceName}
+              onChange={(event) => setModuleGrantForm((prev) => ({ ...prev, resourceName: event.target.value }))}
+              required
+            />
+          </Field>
+          <div className="md:col-span-4">
+            <Button type="submit" disabled={!selectedRole} loading={saving}>
+              Tao permission + gan vao role
+            </Button>
+          </div>
+        </form>
       </Card>
     </div>
   );

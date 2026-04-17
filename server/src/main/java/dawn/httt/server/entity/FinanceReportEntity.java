@@ -1,55 +1,51 @@
 package dawn.httt.server.entity;
 
+import java.time.Instant;
+import java.time.YearMonth;
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
-import jakarta.persistence.FetchType;
 import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
-import jakarta.persistence.JoinColumn;
-import jakarta.persistence.ManyToOne;
+import jakarta.persistence.Index;
 import jakarta.persistence.Table;
 import java.math.BigDecimal;
-import java.time.LocalDate;
 import lombok.Getter;
 import lombok.Setter;
 
 @Getter
 @Setter
 @Entity
-@Table(name = "finance_reports")
+@Table(name = "finance_reports", indexes = {
+    @Index(name = "idx_finance_reports_report_month", columnList = "report_month", unique = true)
+})
 public class FinanceReportEntity extends AuditEntity {
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
-    @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "subscription_id", nullable = false)
-    private SubscriptionEntity subscription;
+    @Column(name = "report_month", nullable = false, length = 7)
+    private YearMonth reportMonth;
 
-    @Column(name = "report_type", nullable = false, length = 50)
-    private String reportType; // MONTHLY, QUARTERLY, YEARLY, CUSTOM
+    @Column(name = "total_revenue", nullable = false, precision = 15, scale = 2)
+    private BigDecimal totalRevenue = BigDecimal.ZERO;
 
-    @Column(name = "period_start", nullable = false)
-    private LocalDate periodStart;
+    @Column(name = "total_paid", nullable = false, precision = 15, scale = 2)
+    private BigDecimal totalPaid = BigDecimal.ZERO;
 
-    @Column(name = "period_end", nullable = false)
-    private LocalDate periodEnd;
+    @Column(name = "total_outstanding", nullable = false, precision = 15, scale = 2)
+    private BigDecimal totalOutstanding = BigDecimal.ZERO;
 
-    @Column(name = "total_income", precision = 15, scale = 2)
-    private BigDecimal totalIncome = BigDecimal.ZERO;
+    @Column(name = "total_invoices", nullable = false)
+    private Integer totalInvoices = 0;
 
-    @Column(name = "total_expense", precision = 15, scale = 2)
-    private BigDecimal totalExpense = BigDecimal.ZERO;
+    @Column(name = "paid_invoices", nullable = false)
+    private Integer paidInvoices = 0;
 
-    @Column(name = "profit", precision = 15, scale = 2)
-    private BigDecimal profit = BigDecimal.ZERO;
+    @Column(name = "overdue_invoices", nullable = false)
+    private Integer overdueInvoices = 0;
 
-    @Column(name = "report_date", nullable = false)
-    private LocalDate reportDate;
-
-    @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "generated_by_user_id")
-    private UserEntity generatedByUser;
+    @Column(name = "generated_at", nullable = false)
+    private Instant generatedAt;
 }

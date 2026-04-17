@@ -74,6 +74,33 @@ export type Subscription = {
   ownerUserId: number;
 };
 
+export type TenantGroup = {
+  id: number;
+  code: string;
+  name: string;
+  representativeUserId: number;
+  representativeFullName: string | null;
+  status: number;
+  note: string | null;
+  memberCount: number;
+  hasActiveContract: boolean;
+};
+
+export type TenantGroupMember = {
+  id: number;
+  tenantGroupId: number;
+  userId: number;
+  username: string;
+  fullName: string;
+  email: string;
+  memberRole: number;
+  joinedAt: string | null;
+  leftAt: string | null;
+  idCardNumber: string | null;
+  idCardFront: string | null;
+  idCardBack: string | null;
+};
+
 export type PageData<T> = {
   content: T[];
   pageable: {

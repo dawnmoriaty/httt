@@ -16,7 +16,7 @@ spring:
   sql:
     init:
       mode: always
-      data-locations: classpath:db/seed.sql
+      data-locations: classpath:db/schema-optimization.sql,classpath:db/seed.sql
   data:
     redis:
       host: ${SPRING_DATA_REDIS_HOST:localhost}
@@ -39,6 +39,10 @@ spring:
   ai:
     openai:
       api-key: ${SPRING_AI_OPENAI_API_KEY:demo-openai-key}
+  security:
+    user:
+      name: ${SPRING_SECURITY_USER_NAME:dev-admin}
+      password: ${SPRING_SECURITY_USER_PASSWORD:dev-password-change-me}
 
 server:
   port: ${SERVER_PORT:8080}
@@ -47,11 +51,6 @@ server:
 
 app:
   security:
-    jwt-secret: ${APP_SECURITY_JWT_SECRET:change-this-secret-before-production}
+    jwt-secret: ${JWT_SECRET:}
     access-token-duration: ${APP_SECURITY_ACCESS_TOKEN_DURATION:PT30M}
     refresh-token-duration: ${APP_SECURITY_REFRESH_TOKEN_DURATION:P7D}
-  bootstrap:
-    admin-username: ${APP_BOOTSTRAP_ADMIN_USERNAME:admin}
-    admin-password: ${APP_BOOTSTRAP_ADMIN_PASSWORD:admin123}
-    admin-email: ${APP_BOOTSTRAP_ADMIN_EMAIL:admin@httt.local}
-    admin-full-name: ${APP_BOOTSTRAP_ADMIN_FULL_NAME:System Administrator}

@@ -12,8 +12,8 @@ export default function DashboardPage() {
         <p className="text-xs uppercase tracking-[0.22em] text-sky-100">Welcome back</p>
         <h1 className="mt-2 text-2xl font-bold sm:text-3xl">Xin chao, {user?.fullName ?? "Admin"}</h1>
         <p className="mt-2 max-w-2xl text-sm leading-7 text-sky-100">
-          Day la dashboard tong quan cho he thong phan quyen RBAC. Ban co the quan ly role, permission va user theo
-          cau truc dong.
+          Day la dashboard tong quan cho he thong phan quyen RBAC va nghiep vu quan ly nguoi thue. Ban co the quan ly
+          role, permission, user va tenant group theo cau truc module dong.
         </p>
       </Card>
 
@@ -39,8 +39,8 @@ export default function DashboardPage() {
       <Card className="space-y-2">
         <h2 className="text-lg font-semibold">Ghi chú phân quyền nâng cao</h2>
         <p className="text-sm text-[var(--muted)] leading-7">
-          Hệ thống hiện có cả RBAC theo permission và ownership theo dữ liệu. Với module Subscription, user thường chỉ
-          có thể sửa hoặc xóa bản ghi do chính mình tạo. SUPER_ADMIN được xem và thao tác toàn bộ dữ liệu.
+          Hệ thống hiện có cả RBAC theo permission và ABAC ownership theo dữ liệu. Với module Subscription và Tenant Group,
+          user thường chỉ có thể thao tác bản ghi thuộc phạm vi quản lý của mình. SUPER_ADMIN được xem và thao tác toàn bộ dữ liệu.
         </p>
       </Card>
     </div>

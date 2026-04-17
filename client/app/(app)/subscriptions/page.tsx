@@ -35,7 +35,6 @@ function SubscriptionsPageContent() {
   const [subscriptionPage, setSubscriptionPage] = useState<PageData<Subscription> | null>(null);
   const [selected, setSelected] = useState<Subscription | null>(null);
   const [form, setForm] = useState<SubscriptionForm>({ title: "", description: "", status: 1 });
-  const [email, setEmail] = useState("admin@httt.local");
   const [loading, setLoading] = useState(false);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -45,8 +44,6 @@ function SubscriptionsPageContent() {
   const canAdd = hasPermission("subscription", "ADD");
   const canUpdate = hasPermission("subscription", "UPDATE");
   const canDelete = hasPermission("subscription", "DELETE");
-  const canImport = hasPermission("subscription", "IMPORT");
-  const canExport = hasPermission("subscription", "EXPORT");
   const isSuperAdmin = user?.roleCodes?.includes("SUPER_ADMIN") ?? false;
 
   const loadSubscriptions = async (targetPage: number) => {
@@ -155,79 +152,11 @@ function SubscriptionsPageContent() {
     }
   };
 
-  const onImport = async () => {
-    setSaving(true);
-    setError(null);
-    setMessage(null);
-    try {
-      const data = await apiRequest<{ message: string; imported: number }>("/subscriptions/import", {
-        method: "POST",
-      });
-      setMessage(`${data.message} (${data.imported})`);
-      pushToast("Import thành công.", "success");
-    } catch (apiError) {
-      if (apiError instanceof ApiClientError) {
-        setError(apiError.message);
-        pushToast(apiError.message, "error");
-      } else {
-        setError("Import that bai.");
-        pushToast("Import thất bại.", "error");
-      }
-    } finally {
-      setSaving(false);
-    }
-  };
-
-  const onExport = async () => {
-    setSaving(true);
-    setError(null);
-    setMessage(null);
-    try {
-      const data = await apiRequest<{ message: string; total: number }>("/subscriptions/export");
-      setMessage(`${data.message} (total: ${data.total})`);
-      pushToast("Export thành công.", "success");
-    } catch (apiError) {
-      if (apiError instanceof ApiClientError) {
-        setError(apiError.message);
-        pushToast(apiError.message, "error");
-      } else {
-        setError("Export that bai.");
-        pushToast("Export thất bại.", "error");
-      }
-    } finally {
-      setSaving(false);
-    }
-  };
-
-  const onExportMail = async () => {
-    setSaving(true);
-    setError(null);
-    setMessage(null);
-    try {
-      const data = await apiRequest<{ message: string; recipient: string }>("/subscriptions/export/mail", {
-        method: "POST",
-        body: { email },
-      });
-      setMessage(`${data.message} -> ${data.recipient}`);
-      pushToast("Export và gửi email thành công.", "success");
-    } catch (apiError) {
-      if (apiError instanceof ApiClientError) {
-        setError(apiError.message);
-        pushToast(apiError.message, "error");
-      } else {
-        setError("Export mail that bai.");
-        pushToast("Gửi mail export thất bại.", "error");
-      }
-    } finally {
-      setSaving(false);
-    }
-  };
-
   return (
     <div className="space-y-5">
       <div>
-        <h1 className="text-2xl font-bold text-[var(--foreground)]">Subscription Demo</h1>
-        <p className="mt-1 text-sm text-[var(--muted)]">Man hinh test day du luong permission: CRUD + Import + Export + Export Mail.</p>
+        <h1 className="text-2xl font-bold text-[var(--foreground)]">Quan ly subscription</h1>
+        <p className="mt-1 text-sm text-[var(--muted)]">CRUD tenant subscription voi ownership rule theo RBAC/ABAC hien tai.</p>
       </div>
 
       {error ? <Alert variant="error" message={error} /> : null}
@@ -320,23 +249,10 @@ function SubscriptionsPageContent() {
             </form>
           </Card>
 
-          <Card className="space-y-3">
-            <h2 className="text-lg font-semibold">Import / Export</h2>
-            <div className="flex flex-wrap gap-2">
-              <Button variant="secondary" onClick={onImport} disabled={!canImport || saving}>
-                Import
-              </Button>
-              <Button variant="secondary" onClick={onExport} disabled={!canExport || saving}>
-                Export
-              </Button>
-            </div>
-
-            <Field label="Email nhan export">
-              <TextInput type="email" value={email} onChange={(event) => setEmail(event.target.value)} />
-            </Field>
-            <Button onClick={onExportMail} disabled={!canExport || saving}>
-              Export qua mail
-            </Button>
+          <Card>
+            <p className="text-sm text-[var(--muted)] leading-7">
+              Module subscription da duoc dọn bo luong import/export demo. Uu tien nghiep vu tenant-boundary va ownership.
+            </p>
           </Card>
         </div>
       </div>

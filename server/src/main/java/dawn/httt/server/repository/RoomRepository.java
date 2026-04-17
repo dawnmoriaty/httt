@@ -8,13 +8,13 @@ import org.springframework.stereotype.Repository;
 
 @Repository
 public interface RoomRepository extends JpaRepository<RoomEntity, Long> {
-    List<RoomEntity> findBySubscriptionId(Long subscriptionId);
+    Optional<RoomEntity> findByCode(String code);
 
-    Optional<RoomEntity> findBySubscriptionIdAndCode(Long subscriptionId, String code);
+    List<RoomEntity> findByStatus(Integer status);
 
-    List<RoomEntity> findBySubscriptionIdAndStatus(Long subscriptionId, Integer status);
+    List<RoomEntity> findByFloor(Integer floor);
 
-    List<RoomEntity> findBySubscriptionIdAndFloor(Long subscriptionId, Integer floor);
+    List<RoomEntity> findByStatusAndFloor(Integer status, Integer floor);
 
-    List<RoomEntity> findByOccupiedByUserId(Long userId);
+    List<RoomEntity> findByActiveContract_Id(Long contractId);
 }

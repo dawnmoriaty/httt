@@ -4,19 +4,19 @@ import dawn.httt.server.entity.FinanceReportEntity;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.stereotype.Repository;
 
-import java.time.LocalDate;
+import java.time.YearMonth;
 import java.util.List;
 import java.util.Optional;
 
 @Repository
 public interface FinanceReportRepository extends JpaRepository<FinanceReportEntity, Long> {
 
-    List<FinanceReportEntity> findBySubscriptionId(Long subscriptionId);
+    Optional<FinanceReportEntity> findByReportMonth(YearMonth reportMonth);
 
-    List<FinanceReportEntity> findByReportType(String reportType);
+    List<FinanceReportEntity> findByOverdueInvoicesGreaterThan(Integer overdueInvoices);
 
-    Optional<FinanceReportEntity> findBySubscriptionIdAndReportType(Long subscriptionId, String reportType);
+    List<FinanceReportEntity> findByTotalOutstandingGreaterThan(java.math.BigDecimal amount);
 
-    List<FinanceReportEntity> findByPeriodStartAndPeriodEnd(LocalDate periodStart, LocalDate periodEnd);
+    List<FinanceReportEntity> findByTotalRevenueGreaterThanEqual(java.math.BigDecimal minimumRevenue);
 
 }
