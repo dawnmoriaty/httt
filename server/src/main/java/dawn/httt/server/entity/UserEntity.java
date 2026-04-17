@@ -10,6 +10,8 @@ import jakarta.persistence.Id;
 import jakarta.persistence.JoinColumn;
 import jakarta.persistence.JoinTable;
 import jakarta.persistence.ManyToMany;
+import jakarta.persistence.ManyToOne;
+import jakarta.persistence.OneToMany;
 import jakarta.persistence.Table;
 import java.util.LinkedHashSet;
 import java.util.Set;
@@ -44,6 +46,23 @@ public class UserEntity extends AuditEntity {
     @Column(name = "session_version", nullable = false)
     private Long sessionVersion = 1L;
 
+    // New Tenant-related fields
+    @Column(name = "phone", length = 20)
+    private String phone;
+
+    @Column(name = "id_card", length = 50)
+    private String idCard;
+
+    @Column(name = "address", length = 500)
+    private String address;
+
+    @Column(name = "relationship_to_owner", length = 50)
+    private String relationshipToOwner; // OWNER, MANAGER, TENANT, GUEST
+
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "subscription_id")
+    private SubscriptionEntity subscription;
+
     @ManyToMany(fetch = FetchType.LAZY)
     @JoinTable(
             name = "user_roles",
@@ -51,4 +70,26 @@ public class UserEntity extends AuditEntity {
             inverseJoinColumns = @JoinColumn(name = "role_id")
     )
     private Set<RoleEntity> roles = new LinkedHashSet<>();
+
+    // Relationships for tenant-related data
+    @OneToMany(mappedBy = "occupiedByUser", fetch = FetchType.LAZY)
+    private Set<RoomEntity> occupiedRooms = new LinkedHashSet<>();
+
+    @OneToMany(mappedBy = "user", fetch = FetchType.LAZY)
+    private Set<ServiceUsageEntity> serviceUsages = new LinkedHashSet<>();
+
+    @OneToMany(mappedBy = "user", fetch = FetchType.LAZY)
+    private Set<InvoiceEntity> invoices = new LinkedHashSet<>();
+
+    @OneToMany(mappedBy = "user", fetch = FetchType.LAZY)
+    private Set<PaymentEntity> payments = new LinkedHashSet<>();
+
+    @OneToMany(mappedBy = "user", fetch = FetchType.LAZY)
+    private Set<ContractEntity> contracts = new LinkedHashSet<>();
+
+    @OneToMany(mappedBy = "leader", fetch = FetchType.LAZY)
+    private Set<TenantGroupEntity> ledTenantGroups = new LinkedHashSet<>();
+
+    @OneToMany(mappedBy = "user", fetch = FetchType.LAZY)
+    private Set<TenantGroupMemberEntity> tenantGroupMemberships = new LinkedHashSet<>();
 }
