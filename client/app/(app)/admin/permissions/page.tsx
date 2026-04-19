@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useState } from "react";
 import { AuthGuard } from "@/components/auth/auth-guard";
 import { Alert } from "@/components/ui/alert";
 import { Badge } from "@/components/ui/badge";
@@ -10,7 +10,7 @@ import { Field, TextInput } from "@/components/ui/field";
 import { Pagination } from "@/components/ui/pagination";
 import { Table } from "@/components/ui/table";
 import { useToast } from "@/components/ui/toast-provider";
-import { apiRequest, ApiClientError } from "@/lib/api-client";
+import { apiRequest, ApiClientError, buildPagingQuery } from "@/lib/api-client";
 import { toVietnameseStatus } from "@/lib/format";
 import type { PageData, Permission } from "@/lib/types";
 
@@ -33,8 +33,10 @@ export default function PermissionsPage() {
 
 function PermissionsPageContent() {
   const [page, setPage] = useState(0);
+  const [size, setSize] = useState(10);
   const [permissionPage, setPermissionPage] = useState<PageData<Permission> | null>(null);
   const [query, setQuery] = useState("");
+  const [searchInput, setSearchInput] = useState("");
   const [form, setForm] = useState<PermissionForm>({
     moduleCode: "",
     moduleName: "",
@@ -49,8 +51,9 @@ function PermissionsPageContent() {
   const [message, setMessage] = useState<string | null>(null);
   const { pushToast } = useToast();
 
-  const loadPermissions = async (targetPage: number) => {
-    const data = await apiRequest<PageData<Permission>>(`/admin/permissions?page=${targetPage}&size=20`);
+  const loadPermissions = async (targetPage: number, targetSize: number, targetQuery: string) => {
+    const queryString = buildPagingQuery({ page: targetPage, size: targetSize, q: targetQuery });
+    const data = await apiRequest<PageData<Permission>>(`/admin/permissions?${queryString}`);
     setPermissionPage(data);
   };
 
@@ -59,13 +62,13 @@ function PermissionsPageContent() {
       setLoading(true);
       setError(null);
       try {
-        await loadPermissions(page);
+        await loadPermissions(page, size, query);
       } catch (apiError) {
         if (apiError instanceof ApiClientError) {
           setError(apiError.message);
           pushToast(apiError.message, "error");
         } else {
-          setError("Khong the tai danh sach permission.");
+          setError("Không thể tải danh sách quyền.");
           pushToast("Không thể tải danh sách quyền.", "error");
         }
       } finally {
@@ -74,7 +77,19 @@ function PermissionsPageContent() {
     };
 
     void run();
-  }, [page]);
+  }, [page, size, query]);
+
+  const onSubmitSearch = (event: React.FormEvent<HTMLFormElement>) => {
+    event.preventDefault();
+    setPage(0);
+    setQuery(searchInput);
+  };
+
+  const onClearSearch = () => {
+    setSearchInput("");
+    setQuery("");
+    setPage(0);
+  };
 
   const onCreatePermission = async (event: React.FormEvent<HTMLFormElement>) => {
     event.preventDefault();
@@ -95,15 +110,15 @@ function PermissionsPageContent() {
         actionCode: "",
         actionName: "",
       });
-      setMessage("Tao permission thanh cong.");
+      setMessage("Tạo quyền thành công.");
       pushToast("Tạo permission thành công.", "success");
-      await loadPermissions(page);
+      await loadPermissions(page, size, query);
     } catch (apiError) {
       if (apiError instanceof ApiClientError) {
         setError(apiError.message);
         pushToast(apiError.message, "error");
       } else {
-        setError("Tao permission that bai.");
+        setError("Tạo quyền thất bại.");
         pushToast("Tạo permission thất bại.", "error");
       }
     } finally {
@@ -111,20 +126,7 @@ function PermissionsPageContent() {
     }
   };
 
-  const rows = useMemo(() => {
-    const source = permissionPage?.content ?? [];
-    const normalizedQuery = query.trim().toLowerCase();
-    const filtered =
-      normalizedQuery.length === 0
-        ? source
-        : source.filter((permission) =>
-            [permission.moduleName, permission.resourceName, permission.actionCode]
-              .join(" ")
-              .toLowerCase()
-              .includes(normalizedQuery),
-          );
-
-    return filtered.map((permission) => [
+  const rows = (permissionPage?.content ?? []).map((permission) => [
       permission.id,
       permission.moduleName,
       permission.resourceName,
@@ -135,57 +137,56 @@ function PermissionsPageContent() {
         {toVietnameseStatus(permission.status)}
       </Badge>,
     ]);
-  }, [permissionPage, query]);
 
   return (
     <div className="space-y-5">
       <div>
-        <h1 className="text-2xl font-bold text-[var(--foreground)]">Danh muc quyen</h1>
-        <p className="mt-1 text-sm text-[var(--muted)]">Danh sach permission theo module, resource va action de cap role dong.</p>
+        <h1 className="text-2xl font-bold text-[var(--foreground)]">Danh mục quyền</h1>
+        <p className="mt-1 text-sm text-[var(--muted)]">Quản lý danh sách quyền theo module, resource và action.</p>
       </div>
 
       {error ? <Alert variant="error" message={error} /> : null}
       {message ? <Alert variant="success" message={message} /> : null}
 
       <Card className="space-y-4">
-        <h2 className="text-lg font-semibold">Tao permission moi</h2>
+        <h2 className="text-lg font-semibold">Tạo quyền mới</h2>
         <form className="grid gap-3 md:grid-cols-3" onSubmit={onCreatePermission}>
-          <Field label="Module code">
+          <Field label="Mã module">
             <TextInput
               value={form.moduleCode}
               onChange={(event) => setForm((prev) => ({ ...prev, moduleCode: event.target.value }))}
               required
             />
           </Field>
-          <Field label="Module name">
+          <Field label="Tên module">
             <TextInput
               value={form.moduleName}
               onChange={(event) => setForm((prev) => ({ ...prev, moduleName: event.target.value }))}
               required
             />
           </Field>
-          <Field label="Resource code">
+          <Field label="Mã resource">
             <TextInput
               value={form.resourceCode}
               onChange={(event) => setForm((prev) => ({ ...prev, resourceCode: event.target.value }))}
               required
             />
           </Field>
-          <Field label="Resource name">
+          <Field label="Tên resource">
             <TextInput
               value={form.resourceName}
               onChange={(event) => setForm((prev) => ({ ...prev, resourceName: event.target.value }))}
               required
             />
           </Field>
-          <Field label="Action code">
+          <Field label="Mã action">
             <TextInput
               value={form.actionCode}
               onChange={(event) => setForm((prev) => ({ ...prev, actionCode: event.target.value }))}
               required
             />
           </Field>
-          <Field label="Action name">
+          <Field label="Tên action">
             <TextInput
               value={form.actionName}
               onChange={(event) => setForm((prev) => ({ ...prev, actionName: event.target.value }))}
@@ -194,26 +195,46 @@ function PermissionsPageContent() {
           </Field>
           <div className="md:col-span-3">
             <Button type="submit" loading={saving}>
-              Tao permission
+              Tạo quyền
             </Button>
           </div>
         </form>
       </Card>
 
       <Card className="space-y-4">
-        <Field label="Tim nhanh theo module / resource / action">
-          <TextInput value={query} onChange={(event) => setQuery(event.target.value)} placeholder="Vi du: subscription VIEW" />
-        </Field>
+        <form className="flex flex-wrap items-end gap-3" onSubmit={onSubmitSearch}>
+          <Field label="Tìm kiếm quyền">
+            <TextInput
+              value={searchInput}
+              onChange={(event) => setSearchInput(event.target.value)}
+              placeholder="Ví dụ: subscription VIEW"
+              className="min-w-72"
+            />
+          </Field>
+          <div className="flex gap-2">
+            <Button type="submit" variant="secondary">
+              Tìm
+            </Button>
+            <Button type="button" variant="ghost" onClick={onClearSearch}>
+              Xóa lọc
+            </Button>
+          </div>
+        </form>
 
-        <Table headers={["ID", "Module", "Resource", "Action", "Status"]} rows={rows} />
+        <Table headers={["ID", "Module", "Resource", "Action", "Trạng thái"]} rows={rows} />
 
         <Pagination
           page={permissionPage?.number ?? 0}
           totalPages={Math.max(permissionPage?.totalPages ?? 0, 1)}
           onPageChange={(nextPage) => setPage(nextPage)}
+          size={size}
+          onSizeChange={(nextSize) => {
+            setSize(nextSize);
+            setPage(0);
+          }}
         />
 
-        {loading ? <p className="text-sm text-[var(--muted)]">Dang tai du lieu...</p> : null}
+        {loading ? <p className="text-sm text-[var(--muted)]">Đang tải dữ liệu...</p> : null}
       </Card>
     </div>
   );

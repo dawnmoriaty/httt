@@ -10,7 +10,7 @@ import { Field, SelectInput, TextInput } from "@/components/ui/field";
 import { Pagination } from "@/components/ui/pagination";
 import { Table } from "@/components/ui/table";
 import { useToast } from "@/components/ui/toast-provider";
-import { apiRequest, ApiClientError } from "@/lib/api-client";
+import { apiRequest, ApiClientError, buildPagingQuery } from "@/lib/api-client";
 import { toVietnameseStatus } from "@/lib/format";
 import type { PageData, TenantGroup, TenantGroupMember, User } from "@/lib/types";
 
@@ -41,6 +41,12 @@ export default function TenantGroupsPage() {
 function TenantGroupsPageContent() {
   const [page, setPage] = useState(0);
   const [memberPage, setMemberPage] = useState(0);
+  const [size, setSize] = useState(10);
+  const [memberSize, setMemberSize] = useState(10);
+  const [query, setQuery] = useState("");
+  const [memberQuery, setMemberQuery] = useState("");
+  const [searchInput, setSearchInput] = useState("");
+  const [memberSearchInput, setMemberSearchInput] = useState("");
   const [tenantGroupPage, setTenantGroupPage] = useState<PageData<TenantGroup> | null>(null);
   const [memberResult, setMemberResult] = useState<PageData<TenantGroupMember> | null>(null);
   const [users, setUsers] = useState<User[]>([]);
@@ -65,8 +71,9 @@ function TenantGroupsPageContent() {
   const [message, setMessage] = useState<string | null>(null);
   const { pushToast } = useToast();
 
-  const loadTenantGroups = async (targetPage: number) => {
-    const data = await apiRequest<PageData<TenantGroup>>(`/tenant-groups?page=${targetPage}&size=10`);
+  const loadTenantGroups = async (targetPage: number, targetSize: number, targetQuery: string) => {
+    const queryString = buildPagingQuery({ page: targetPage, size: targetSize, q: targetQuery });
+    const data = await apiRequest<PageData<TenantGroup>>(`/tenant-groups?${queryString}`);
     setTenantGroupPage(data);
   };
 
@@ -75,10 +82,9 @@ function TenantGroupsPageContent() {
     setUsers(data.content);
   };
 
-  const loadMembers = async (tenantGroupId: number, targetPage: number) => {
-    const data = await apiRequest<PageData<TenantGroupMember>>(
-      `/tenant-groups/${tenantGroupId}/members?page=${targetPage}&size=10`,
-    );
+  const loadMembers = async (tenantGroupId: number, targetPage: number, targetSize: number, targetQuery: string) => {
+    const queryString = buildPagingQuery({ page: targetPage, size: targetSize, q: targetQuery });
+    const data = await apiRequest<PageData<TenantGroupMember>>(`/tenant-groups/${tenantGroupId}/members?${queryString}`);
     setMemberResult(data);
   };
 
@@ -87,13 +93,13 @@ function TenantGroupsPageContent() {
       setLoading(true);
       setError(null);
       try {
-        await Promise.all([loadTenantGroups(page), loadUsers()]);
+        await Promise.all([loadTenantGroups(page, size, query), loadUsers()]);
       } catch (apiError) {
         if (apiError instanceof ApiClientError) {
           setError(apiError.message);
           pushToast(apiError.message, "error");
         } else {
-          setError("Khong the tai du lieu nhom nguoi thue.");
+          setError("Không thể tải dữ liệu nhóm người thuê.");
           pushToast("Không thể tải dữ liệu nhóm người thuê.", "error");
         }
       } finally {
@@ -102,7 +108,31 @@ function TenantGroupsPageContent() {
     };
 
     void run();
-  }, [page, pushToast]);
+  }, [page, size, query, pushToast]);
+
+  const onSubmitSearch = (event: React.FormEvent<HTMLFormElement>) => {
+    event.preventDefault();
+    setPage(0);
+    setQuery(searchInput);
+  };
+
+  const onClearSearch = () => {
+    setSearchInput("");
+    setQuery("");
+    setPage(0);
+  };
+
+  const onSubmitMemberSearch = (event: React.FormEvent<HTMLFormElement>) => {
+    event.preventDefault();
+    setMemberPage(0);
+    setMemberQuery(memberSearchInput);
+  };
+
+  const onClearMemberSearch = () => {
+    setMemberSearchInput("");
+    setMemberQuery("");
+    setMemberPage(0);
+  };
 
   useEffect(() => {
     if (!selected) {
@@ -112,20 +142,20 @@ function TenantGroupsPageContent() {
 
     const run = async () => {
       try {
-        await loadMembers(selected.id, memberPage);
+        await loadMembers(selected.id, memberPage, memberSize, memberQuery);
       } catch (apiError) {
         if (apiError instanceof ApiClientError) {
           setError(apiError.message);
           pushToast(apiError.message, "error");
         } else {
-          setError("Khong the tai danh sach thanh vien.");
+          setError("Không thể tải danh sách thành viên.");
           pushToast("Không thể tải danh sách thành viên.", "error");
         }
       }
     };
 
     void run();
-  }, [selected, memberPage, pushToast]);
+  }, [selected, memberPage, memberSize, memberQuery, pushToast]);
 
   const resetTenantForm = () => {
     setForm({
@@ -141,6 +171,8 @@ function TenantGroupsPageContent() {
   const onPick = async (item: TenantGroup) => {
     setSelected(item);
     setMemberPage(0);
+    setMemberQuery("");
+    setMemberSearchInput("");
     setForm({
       code: item.code,
       name: item.name,
@@ -150,7 +182,7 @@ function TenantGroupsPageContent() {
     });
 
     try {
-      await loadMembers(item.id, 0);
+      await loadMembers(item.id, 0, memberSize, "");
     } catch (apiError) {
       if (apiError instanceof ApiClientError) {
         setError(apiError.message);
@@ -162,7 +194,7 @@ function TenantGroupsPageContent() {
   const onSaveTenantGroup = async (event: React.FormEvent<HTMLFormElement>) => {
     event.preventDefault();
     if (form.representativeUserId === "") {
-      setError("Vui long chon nguoi dai dien.");
+      setError("Vui lòng chọn người đại diện.");
       return;
     }
 
@@ -181,7 +213,7 @@ function TenantGroupsPageContent() {
             note: form.note,
           },
         });
-        setMessage("Cap nhat nhom nguoi thue thanh cong.");
+        setMessage("Cập nhật nhóm người thuê thành công.");
         pushToast("Cập nhật nhóm người thuê thành công.", "success");
       } else {
         await apiRequest<TenantGroup>("/tenant-groups", {
@@ -194,12 +226,12 @@ function TenantGroupsPageContent() {
             note: form.note,
           },
         });
-        setMessage("Tao nhom nguoi thue thanh cong.");
+        setMessage("Tạo nhóm người thuê thành công.");
         pushToast("Tạo nhóm người thuê thành công.", "success");
         resetTenantForm();
       }
 
-      await loadTenantGroups(page);
+      await loadTenantGroups(page, size, query);
       if (selected) {
         const refreshed = await apiRequest<TenantGroup>(`/tenant-groups/${selected.id}`);
         setSelected(refreshed);
@@ -209,7 +241,7 @@ function TenantGroupsPageContent() {
         setError(apiError.message);
         pushToast(apiError.message, "error");
       } else {
-        setError("Luu nhom nguoi thue that bai.");
+        setError("Lưu nhóm người thuê thất bại.");
         pushToast("Lưu nhóm người thuê thất bại.", "error");
       }
     } finally {
@@ -218,7 +250,7 @@ function TenantGroupsPageContent() {
   };
 
   const onDeleteTenantGroup = async (item: TenantGroup) => {
-    if (!window.confirm(`Xoa nhom ${item.name}?`)) {
+    if (!window.confirm(`Xóa nhóm ${item.name}?`)) {
       return;
     }
 
@@ -228,19 +260,19 @@ function TenantGroupsPageContent() {
 
     try {
       await apiRequest<void>(`/tenant-groups/${item.id}`, { method: "DELETE" });
-      await loadTenantGroups(page);
+      await loadTenantGroups(page, size, query);
       if (selected?.id === item.id) {
         resetTenantForm();
         setMemberResult(null);
       }
-      setMessage("Xoa nhom nguoi thue thanh cong.");
+      setMessage("Xóa nhóm người thuê thành công.");
       pushToast("Xóa nhóm người thuê thành công.", "success");
     } catch (apiError) {
       if (apiError instanceof ApiClientError) {
         setError(apiError.message);
         pushToast(apiError.message, "error");
       } else {
-        setError("Xoa nhom nguoi thue that bai.");
+        setError("Xóa nhóm người thuê thất bại.");
         pushToast("Xóa nhóm người thuê thất bại.", "error");
       }
     } finally {
@@ -251,11 +283,11 @@ function TenantGroupsPageContent() {
   const onAddMember = async (event: React.FormEvent<HTMLFormElement>) => {
     event.preventDefault();
     if (!selected) {
-      setError("Hay chon nhom truoc khi them thanh vien.");
+      setError("Hãy chọn nhóm trước khi thêm thành viên.");
       return;
     }
     if (memberForm.userId === "") {
-      setError("Vui long chon user thanh vien.");
+      setError("Vui lòng chọn người dùng thành viên.");
       return;
     }
 
@@ -282,16 +314,16 @@ function TenantGroupsPageContent() {
         leftAt: "",
         idCardNumber: "",
       });
-      await loadMembers(selected.id, memberPage);
-      await loadTenantGroups(page);
-      setMessage("Them thanh vien thanh cong.");
+      await loadMembers(selected.id, memberPage, memberSize, memberQuery);
+      await loadTenantGroups(page, size, query);
+      setMessage("Thêm thành viên thành công.");
       pushToast("Thêm thành viên thành công.", "success");
     } catch (apiError) {
       if (apiError instanceof ApiClientError) {
         setError(apiError.message);
         pushToast(apiError.message, "error");
       } else {
-        setError("Them thanh vien that bai.");
+        setError("Thêm thành viên thất bại.");
         pushToast("Thêm thành viên thất bại.", "error");
       }
     } finally {
@@ -304,7 +336,7 @@ function TenantGroupsPageContent() {
       return;
     }
 
-    if (!window.confirm(`Xoa thanh vien ${member.fullName}?`)) {
+    if (!window.confirm(`Xóa thành viên ${member.fullName}?`)) {
       return;
     }
 
@@ -315,16 +347,16 @@ function TenantGroupsPageContent() {
       await apiRequest<void>(`/tenant-groups/${selected.id}/members/${member.id}`, {
         method: "DELETE",
       });
-      await loadMembers(selected.id, memberPage);
-      await loadTenantGroups(page);
-      setMessage("Xoa thanh vien thanh cong.");
+      await loadMembers(selected.id, memberPage, memberSize, memberQuery);
+      await loadTenantGroups(page, size, query);
+      setMessage("Xóa thành viên thành công.");
       pushToast("Xóa thành viên thành công.", "success");
     } catch (apiError) {
       if (apiError instanceof ApiClientError) {
         setError(apiError.message);
         pushToast(apiError.message, "error");
       } else {
-        setError("Xoa thanh vien that bai.");
+        setError("Xóa thành viên thất bại.");
         pushToast("Xóa thành viên thất bại.", "error");
       }
     } finally {
@@ -335,20 +367,41 @@ function TenantGroupsPageContent() {
   return (
     <div className="space-y-5">
       <div>
-        <h1 className="text-2xl font-bold text-[var(--foreground)]">Quan ly nguoi thue</h1>
+        <h1 className="text-2xl font-bold text-[var(--foreground)]">Quản lý người thuê</h1>
         <p className="mt-1 text-sm text-[var(--muted)]">
-          Quan ly nhom nguoi thue theo ho gia dinh, cap nhat nguoi dai dien va danh sach thanh vien.
+          Quản lý nhóm người thuê theo hộ gia đình, cập nhật người đại diện và danh sách thành viên.
         </p>
       </div>
+
+      <Card>
+        <form className="flex flex-wrap items-end gap-3" onSubmit={onSubmitSearch}>
+          <Field label="Tìm kiếm nhóm người thuê">
+            <TextInput
+              value={searchInput}
+              onChange={(event) => setSearchInput(event.target.value)}
+              placeholder="Nhập mã nhóm, tên nhóm hoặc ghi chú"
+              className="min-w-72"
+            />
+          </Field>
+          <div className="flex gap-2">
+            <Button type="submit" variant="secondary">
+              Tìm
+            </Button>
+            <Button type="button" variant="ghost" onClick={onClearSearch}>
+              Xóa lọc
+            </Button>
+          </div>
+        </form>
+      </Card>
 
       {error ? <Alert variant="error" message={error} /> : null}
       {message ? <Alert variant="success" message={message} /> : null}
 
       <div className="grid gap-5 xl:grid-cols-[1.2fr_1fr]">
         <Card className="space-y-4">
-          <h2 className="text-lg font-semibold">Danh sach nhom nguoi thue</h2>
+          <h2 className="text-lg font-semibold">Danh sách nhóm người thuê</h2>
           <Table
-            headers={["ID", "Ma", "Ten nhom", "Dai dien", "So TV", "Status", "Action"]}
+            headers={["ID", "Mã", "Tên nhóm", "Đại diện", "Số TV", "Trạng thái", "Thao tác"]}
             rows={(tenantGroupPage?.content ?? []).map((item) => [
               item.id,
               <span key={`code-${item.id}`} className="font-mono text-xs">
@@ -362,10 +415,10 @@ function TenantGroupsPageContent() {
               </Badge>,
               <div key={`actions-${item.id}`} className="flex flex-wrap gap-2">
                 <Button variant="secondary" onClick={() => void onPick(item)}>
-                  Chon
+                  Chọn
                 </Button>
                 <Button variant="danger" onClick={() => void onDeleteTenantGroup(item)} disabled={saving}>
-                  Xoa
+                  Xóa
                 </Button>
               </div>,
             ])}
@@ -375,15 +428,20 @@ function TenantGroupsPageContent() {
             page={tenantGroupPage?.number ?? 0}
             totalPages={Math.max(tenantGroupPage?.totalPages ?? 0, 1)}
             onPageChange={(nextPage) => setPage(nextPage)}
+            size={size}
+            onSizeChange={(nextSize) => {
+              setSize(nextSize);
+              setPage(0);
+            }}
           />
 
-          {loading ? <p className="text-sm text-[var(--muted)]">Dang tai du lieu...</p> : null}
+          {loading ? <p className="text-sm text-[var(--muted)]">Đang tải dữ liệu...</p> : null}
         </Card>
 
         <Card className="space-y-4">
-          <h2 className="text-lg font-semibold">{selected ? "Cap nhat nhom" : "Tao nhom moi"}</h2>
+          <h2 className="text-lg font-semibold">{selected ? "Cập nhật nhóm" : "Tạo nhóm mới"}</h2>
           <form className="space-y-3" onSubmit={onSaveTenantGroup}>
-            <Field label="Ma nhom">
+            <Field label="Mã nhóm">
               <TextInput
                 value={form.code}
                 onChange={(event) => setForm((prev) => ({ ...prev, code: event.target.value }))}
@@ -391,21 +449,21 @@ function TenantGroupsPageContent() {
                 disabled={!!selected}
               />
             </Field>
-            <Field label="Ten nhom">
+            <Field label="Tên nhóm">
               <TextInput
                 value={form.name}
                 onChange={(event) => setForm((prev) => ({ ...prev, name: event.target.value }))}
                 required
               />
             </Field>
-            <Field label="Nguoi dai dien">
+            <Field label="Người đại diện">
               <SelectInput
                 value={form.representativeUserId}
                 onChange={(event) => setForm((prev) => ({ ...prev, representativeUserId: Number(event.target.value) }))}
                 required
               >
                 <option value="" disabled>
-                  Chon user
+                  Chọn người dùng
                 </option>
                 {users.map((user) => (
                   <option key={user.id} value={user.id}>
@@ -414,25 +472,25 @@ function TenantGroupsPageContent() {
                 ))}
               </SelectInput>
             </Field>
-            <Field label="Trang thai">
+            <Field label="Trạng thái">
               <SelectInput
                 value={form.status}
                 onChange={(event) => setForm((prev) => ({ ...prev, status: Number(event.target.value) }))}
               >
-                <option value={1}>Hoat dong</option>
-                <option value={2}>Ngung hoat dong</option>
+                <option value={1}>Hoạt động</option>
+                <option value={2}>Ngừng hoạt động</option>
               </SelectInput>
             </Field>
-            <Field label="Ghi chu">
+            <Field label="Ghi chú">
               <TextInput value={form.note} onChange={(event) => setForm((prev) => ({ ...prev, note: event.target.value }))} />
             </Field>
             <div className="flex flex-wrap gap-2">
               <Button type="submit" loading={saving}>
-                {selected ? "Luu cap nhat" : "Tao nhom"}
+                {selected ? "Lưu cập nhật" : "Tạo nhóm"}
               </Button>
               {selected ? (
                 <Button variant="ghost" onClick={resetTenantForm}>
-                  Huy chon
+                  Hủy chọn
                 </Button>
               ) : null}
             </div>
@@ -442,14 +500,34 @@ function TenantGroupsPageContent() {
 
       <Card className="space-y-4">
         <div className="flex items-center justify-between gap-2">
-          <h2 className="text-lg font-semibold">Thanh vien nhom</h2>
+          <h2 className="text-lg font-semibold">Thành viên nhóm</h2>
           <span className="text-sm text-[var(--muted)]">
-            Nhom dang chon: <span className="font-semibold text-[var(--foreground)]">{selected?.name ?? "Chua chon"}</span>
+            Nhóm đang chọn: <span className="font-semibold text-[var(--foreground)]">{selected?.name ?? "Chưa chọn"}</span>
           </span>
         </div>
 
+        <form className="flex flex-wrap items-end gap-3" onSubmit={onSubmitMemberSearch}>
+          <Field label="Tìm kiếm thành viên trong nhóm">
+            <TextInput
+              value={memberSearchInput}
+              onChange={(event) => setMemberSearchInput(event.target.value)}
+              placeholder="Nhập tên, username, email hoặc CCCD"
+              className="min-w-72"
+              disabled={!selected}
+            />
+          </Field>
+          <div className="flex gap-2">
+            <Button type="submit" variant="secondary" disabled={!selected}>
+              Tìm
+            </Button>
+            <Button type="button" variant="ghost" onClick={onClearMemberSearch} disabled={!selected}>
+              Xóa lọc
+            </Button>
+          </div>
+        </form>
+
         <form className="grid gap-3 md:grid-cols-5" onSubmit={onAddMember}>
-          <Field label="User">
+          <Field label="Người dùng">
             <SelectInput
               value={memberForm.userId}
               onChange={(event) => setMemberForm((prev) => ({ ...prev, userId: Number(event.target.value) }))}
@@ -457,32 +535,32 @@ function TenantGroupsPageContent() {
               required
             >
               <option value="" disabled>
-                Chon user
+                Chọn người dùng
               </option>
               {users.map((user) => (
                 <option key={user.id} value={user.id}>
                   {user.fullName}
                 </option>
               ))}
-            </SelectInput>
-          </Field>
-          <Field label="Vai tro">
+              </SelectInput>
+            </Field>
+          <Field label="Vai trò">
             <SelectInput
               value={memberForm.memberRole}
               onChange={(event) => setMemberForm((prev) => ({ ...prev, memberRole: Number(event.target.value) }))}
             >
-              <option value={1}>Dai dien</option>
-              <option value={2}>Thanh vien</option>
+              <option value={1}>Đại diện</option>
+              <option value={2}>Thành viên</option>
             </SelectInput>
           </Field>
-          <Field label="Ngay vao o">
+          <Field label="Ngày vào ở">
             <TextInput
               type="date"
               value={memberForm.joinedAt}
               onChange={(event) => setMemberForm((prev) => ({ ...prev, joinedAt: event.target.value }))}
             />
           </Field>
-          <Field label="Ngay roi di">
+          <Field label="Ngày rời đi">
             <TextInput
               type="date"
               value={memberForm.leftAt}
@@ -497,23 +575,23 @@ function TenantGroupsPageContent() {
           </Field>
           <div className="md:col-span-5">
             <Button type="submit" disabled={!selected} loading={saving}>
-              Them thanh vien
+              Thêm thành viên
             </Button>
           </div>
         </form>
 
         <Table
-          headers={["ID", "User", "Email", "Vai tro", "Ngay vao", "Ngay ra", "CCCD", "Action"]}
+          headers={["ID", "Người dùng", "Email", "Vai trò", "Ngày vào", "Ngày ra", "CCCD", "Thao tác"]}
           rows={(memberResult?.content ?? []).map((member) => [
             member.id,
             member.fullName,
             member.email,
-            member.memberRole === 1 ? "Dai dien" : "Thanh vien",
+            member.memberRole === 1 ? "Đại diện" : "Thành viên",
             member.joinedAt ?? "-",
             member.leftAt ?? "-",
             member.idCardNumber ?? "-",
             <Button key={`del-member-${member.id}`} variant="danger" onClick={() => void onRemoveMember(member)} disabled={!selected || saving}>
-              Xoa
+              Xóa
             </Button>,
           ])}
         />
@@ -522,6 +600,11 @@ function TenantGroupsPageContent() {
           page={memberResult?.number ?? 0}
           totalPages={Math.max(memberResult?.totalPages ?? 0, 1)}
           onPageChange={(nextPage) => setMemberPage(nextPage)}
+          size={memberSize}
+          onSizeChange={(nextSize) => {
+            setMemberSize(nextSize);
+            setMemberPage(0);
+          }}
         />
       </Card>
     </div>

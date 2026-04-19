@@ -30,8 +30,20 @@ public interface UserRepository extends JpaRepository<UserEntity, Long> {
     @EntityGraph(attributePaths = {"roles", "roles.permissions"})
     Optional<UserEntity> findAuthSnapshotById(Long id);
 
-    @EntityGraph(attributePaths = {"roles"})
     Page<UserEntity> findAllByOrderByIdAsc(Pageable pageable);
+
+    @Query("""
+            select u from UserEntity u
+            where lower(u.username) like lower(concat('%', :q, '%'))
+               or lower(u.fullName) like lower(concat('%', :q, '%'))
+               or lower(u.email) like lower(concat('%', :q, '%'))
+            order by u.id desc
+            """)
+    Page<UserEntity> searchByKeyword(@Param("q") String query, Pageable pageable);
+
+    @EntityGraph(attributePaths = {"roles"})
+    @Query("select u from UserEntity u where u.id in :ids")
+    List<UserEntity> findWithRolesByIdIn(@Param("ids") List<Long> ids);
 
     @Query("select distinct u.id from UserEntity u join u.roles r where r.id = :roleId")
     List<Long> findDistinctIdsByRoleId(@Param("roleId") Long roleId);

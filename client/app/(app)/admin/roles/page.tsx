@@ -10,7 +10,7 @@ import { Field, TextAreaInput, TextInput } from "@/components/ui/field";
 import { Pagination } from "@/components/ui/pagination";
 import { Table } from "@/components/ui/table";
 import { useToast } from "@/components/ui/toast-provider";
-import { apiRequest, ApiClientError } from "@/lib/api-client";
+import { apiRequest, ApiClientError, buildPagingQuery } from "@/lib/api-client";
 import { toVietnameseStatus } from "@/lib/format";
 import type { PageData, Permission, Role } from "@/lib/types";
 
@@ -37,6 +37,9 @@ export default function RolesPage() {
 
 function RolesPageContent() {
   const [page, setPage] = useState(0);
+  const [size, setSize] = useState(10);
+  const [query, setQuery] = useState("");
+  const [searchInput, setSearchInput] = useState("");
   const [rolePage, setRolePage] = useState<PageData<Role> | null>(null);
   const [permissions, setPermissions] = useState<Permission[]>([]);
   const [selectedRole, setSelectedRole] = useState<Role | null>(null);
@@ -73,8 +76,9 @@ function RolesPageContent() {
     });
   }, [permissions]);
 
-  const loadRoles = async (targetPage: number) => {
-    const data = await apiRequest<PageData<Role>>(`/admin/roles?page=${targetPage}&size=10`);
+  const loadRoles = async (targetPage: number, targetSize: number, targetQuery: string) => {
+    const queryString = buildPagingQuery({ page: targetPage, size: targetSize, q: targetQuery });
+    const data = await apiRequest<PageData<Role>>(`/admin/roles?${queryString}`);
     setRolePage(data);
   };
 
@@ -88,13 +92,13 @@ function RolesPageContent() {
       setLoading(true);
       setError(null);
       try {
-        await Promise.all([loadRoles(page), loadPermissions()]);
+        await Promise.all([loadRoles(page, size, query), loadPermissions()]);
       } catch (apiError) {
         if (apiError instanceof ApiClientError) {
           setError(apiError.message);
           pushToast(apiError.message, "error");
         } else {
-          setError("Khong the tai du lieu role.");
+          setError("Không thể tải dữ liệu vai trò.");
           pushToast("Không thể tải dữ liệu role.", "error");
         }
       } finally {
@@ -103,7 +107,19 @@ function RolesPageContent() {
     };
 
     void run();
-  }, [page]);
+  }, [page, size, query]);
+
+  const onSubmitSearch = (event: React.FormEvent<HTMLFormElement>) => {
+    event.preventDefault();
+    setPage(0);
+    setQuery(searchInput);
+  };
+
+  const onClearSearch = () => {
+    setSearchInput("");
+    setQuery("");
+    setPage(0);
+  };
 
   const onSelectRole = (role: Role) => {
     setSelectedRole(role);
@@ -127,16 +143,16 @@ function RolesPageContent() {
         },
       });
       setForm({ code: "", name: "", description: "" });
-      await loadRoles(0);
+      await loadRoles(0, size, query);
       setPage(0);
-      setMessage("Tao role thanh cong.");
+      setMessage("Tạo vai trò thành công.");
       pushToast("Tạo role thành công.", "success");
     } catch (apiError) {
       if (apiError instanceof ApiClientError) {
         setError(apiError.message);
         pushToast(apiError.message, "error");
       } else {
-        setError("Tao role that bai.");
+        setError("Tạo vai trò thất bại.");
         pushToast("Tạo role thất bại.", "error");
       }
     } finally {
@@ -162,15 +178,15 @@ function RolesPageContent() {
           permissionIds: selectedPermissionIds,
         },
       });
-      await loadRoles(page);
-      setMessage("Cap nhat quyen cho role thanh cong.");
+      await loadRoles(page, size, query);
+      setMessage("Cập nhật quyền cho vai trò thành công.");
       pushToast("Cập nhật quyền cho role thành công.", "success");
     } catch (apiError) {
       if (apiError instanceof ApiClientError) {
         setError(apiError.message);
         pushToast(apiError.message, "error");
       } else {
-        setError("Cap nhat quyen that bai.");
+        setError("Cập nhật quyền thất bại.");
         pushToast("Cập nhật quyền thất bại.", "error");
       }
     } finally {
@@ -202,7 +218,7 @@ function RolesPageContent() {
             { actionCode: "VIEW", actionName: "Xem" },
             { actionCode: "ADD", actionName: "Them" },
             { actionCode: "UPDATE", actionName: "Sua" },
-            { actionCode: "DELETE", actionName: "Xoa" },
+            { actionCode: "DELETE", actionName: "Xóa" },
           ],
         },
       });
@@ -213,15 +229,15 @@ function RolesPageContent() {
         resourceCode: "",
         resourceName: "",
       });
-      await Promise.all([loadRoles(page), loadPermissions()]);
-      setMessage("Cap module cho role thanh cong.");
+      await Promise.all([loadRoles(page, size, query), loadPermissions()]);
+      setMessage("Cấp module cho vai trò thành công.");
       pushToast("Cấp module cho role thành công.", "success");
     } catch (apiError) {
       if (apiError instanceof ApiClientError) {
         setError(apiError.message);
         pushToast(apiError.message, "error");
       } else {
-        setError("Cap module that bai.");
+        setError("Cấp module thất bại.");
         pushToast("Cấp module thất bại.", "error");
       }
     } finally {
@@ -232,18 +248,39 @@ function RolesPageContent() {
   return (
     <div className="space-y-5">
       <div>
-        <h1 className="text-2xl font-bold text-[var(--foreground)]">Danh sach nhom quyen</h1>
-        <p className="mt-1 text-sm text-[var(--muted)]">Tao role moi va tick permission theo ma tran module/resource/action.</p>
+        <h1 className="text-2xl font-bold text-[var(--foreground)]">Danh sách vai trò</h1>
+        <p className="mt-1 text-sm text-[var(--muted)]">Tạo vai trò mới và phân quyền theo ma trận module / resource / action.</p>
       </div>
+
+      <Card>
+        <form className="flex flex-wrap items-end gap-3" onSubmit={onSubmitSearch}>
+          <Field label="Tìm kiếm vai trò">
+            <TextInput
+              value={searchInput}
+              onChange={(event) => setSearchInput(event.target.value)}
+              placeholder="Nhập mã, tên hoặc mô tả"
+              className="min-w-72"
+            />
+          </Field>
+          <div className="flex gap-2">
+            <Button type="submit" variant="secondary">
+              Tìm
+            </Button>
+            <Button type="button" variant="ghost" onClick={onClearSearch}>
+              Xóa lọc
+            </Button>
+          </div>
+        </form>
+      </Card>
 
       {error ? <Alert variant="error" message={error} /> : null}
       {message ? <Alert variant="success" message={message} /> : null}
 
       <div className="grid gap-5 xl:grid-cols-[1.1fr_1fr]">
         <Card className="space-y-4">
-          <h2 className="text-lg font-semibold">Danh sach role</h2>
+          <h2 className="text-lg font-semibold">Danh sách vai trò</h2>
           <Table
-            headers={["ID", "Code", "Ten role", "Status", "Action"]}
+            headers={["ID", "Mã", "Tên vai trò", "Trạng thái", "Thao tác"]}
             rows={(rolePage?.content ?? []).map((role) => [
               role.id,
               <span className="font-mono text-xs">{role.code}</span>,
@@ -252,7 +289,7 @@ function RolesPageContent() {
                 {toVietnameseStatus(role.status)}
               </Badge>,
               <Button key={`pick-${role.id}`} variant="secondary" onClick={() => onSelectRole(role)}>
-                Chon
+                Chọn
               </Button>,
             ])}
           />
@@ -261,19 +298,24 @@ function RolesPageContent() {
             page={rolePage?.number ?? 0}
             totalPages={Math.max(rolePage?.totalPages ?? 0, 1)}
             onPageChange={(nextPage) => setPage(nextPage)}
+            size={size}
+            onSizeChange={(nextSize) => {
+              setSize(nextSize);
+              setPage(0);
+            }}
           />
         </Card>
 
         <Card className="space-y-4">
-          <h2 className="text-lg font-semibold">Tao role moi</h2>
+          <h2 className="text-lg font-semibold">Tạo vai trò mới</h2>
           <form className="space-y-3" onSubmit={onCreateRole}>
-            <Field label="Role code">
+            <Field label="Mã vai trò">
               <TextInput value={form.code} onChange={(event) => setForm((prev) => ({ ...prev, code: event.target.value }))} required />
             </Field>
-            <Field label="Role name">
+            <Field label="Tên vai trò">
               <TextInput value={form.name} onChange={(event) => setForm((prev) => ({ ...prev, name: event.target.value }))} required />
             </Field>
-            <Field label="Description">
+            <Field label="Mô tả">
               <TextAreaInput
                 rows={3}
                 value={form.description}
@@ -281,7 +323,7 @@ function RolesPageContent() {
               />
             </Field>
             <Button type="submit" loading={saving}>
-              Tao role
+              Tạo vai trò
             </Button>
           </form>
         </Card>
@@ -289,9 +331,9 @@ function RolesPageContent() {
 
       <Card className="space-y-4">
         <div className="flex flex-wrap items-center justify-between gap-2">
-          <h2 className="text-lg font-semibold">Permission Matrix</h2>
+          <h2 className="text-lg font-semibold">Ma trận phân quyền</h2>
           <div className="text-sm text-[var(--muted)]">
-            Role dang chon: <span className="font-semibold text-[var(--foreground)]">{selectedRole?.name ?? "Chua chon"}</span>
+            Vai trò đang chọn: <span className="font-semibold text-[var(--foreground)]">{selectedRole?.name ?? "Chưa chọn"}</span>
           </div>
         </div>
 
@@ -300,7 +342,7 @@ function RolesPageContent() {
             <thead className="bg-[var(--surface-muted)]">
               <tr>
                 <th className="px-4 py-3 text-left font-semibold">Module / Resource</th>
-                <th className="px-4 py-3 text-left font-semibold">Actions</th>
+                <th className="px-4 py-3 text-left font-semibold">Hành động</th>
               </tr>
             </thead>
             <tbody>
@@ -345,36 +387,39 @@ function RolesPageContent() {
         </div>
 
         <Button onClick={onAssignPermissions} disabled={!selectedRole || loading} loading={saving}>
-          Luu phan quyen role
+          Lưu phân quyền
         </Button>
       </Card>
 
       <Card className="space-y-4">
-        <h2 className="text-lg font-semibold">Cap module moi cho role</h2>
-        <p className="text-sm text-[var(--muted)]">Them nhanh permission cho phan he moi, sau do co the tinh chinh trong matrix.</p>
+        <h2 className="text-lg font-semibold">Cấp module mới cho vai trò</h2>
+        <p className="text-sm text-[var(--muted)]">Thêm nhanh quyền cho phân hệ mới, sau đó có thể tinh chỉnh trong ma trận.</p>
+        <p className="text-sm text-[var(--muted)]">
+          Vai trò đang chọn: <span className="font-semibold text-[var(--foreground)]">{selectedRole?.name ?? "Chưa chọn"}</span>
+        </p>
         <form className="grid gap-3 md:grid-cols-4" onSubmit={onGrantModule}>
-          <Field label="Module code">
+          <Field label="Mã module">
             <TextInput
               value={moduleGrantForm.moduleCode}
               onChange={(event) => setModuleGrantForm((prev) => ({ ...prev, moduleCode: event.target.value }))}
               required
             />
           </Field>
-          <Field label="Module name">
+          <Field label="Tên module">
             <TextInput
               value={moduleGrantForm.moduleName}
               onChange={(event) => setModuleGrantForm((prev) => ({ ...prev, moduleName: event.target.value }))}
               required
             />
           </Field>
-          <Field label="Resource code">
+          <Field label="Mã resource">
             <TextInput
               value={moduleGrantForm.resourceCode}
               onChange={(event) => setModuleGrantForm((prev) => ({ ...prev, resourceCode: event.target.value }))}
               required
             />
           </Field>
-          <Field label="Resource name">
+          <Field label="Tên resource">
             <TextInput
               value={moduleGrantForm.resourceName}
               onChange={(event) => setModuleGrantForm((prev) => ({ ...prev, resourceName: event.target.value }))}
@@ -383,7 +428,7 @@ function RolesPageContent() {
           </Field>
           <div className="md:col-span-4">
             <Button type="submit" disabled={!selectedRole} loading={saving}>
-              Tao permission + gan vao role
+              Tạo quyền và gán vào vai trò
             </Button>
           </div>
         </form>

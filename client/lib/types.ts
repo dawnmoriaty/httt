@@ -116,6 +116,12 @@ export type PageData<T> = {
   empty: boolean;
 };
 
+export type PagingQuery = {
+  page: number;
+  size: number;
+  q?: string;
+};
+
 export type Tokens = {
   accessToken: string;
   refreshToken: string;

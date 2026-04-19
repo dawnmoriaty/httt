@@ -40,6 +40,24 @@ public class SubscriptionService {
                 .map(this::toResponse);
     }
 
+    public Page<SubscriptionResponse> getAll(String query, Pageable pageable) {
+        AuthenticatedUser currentUser = currentAuthenticatedUserProvider.getCurrentUser();
+        boolean hasQuery = hasText(query);
+
+        if (permissionGuard.isSuperAdmin(currentUser)) {
+            Page<SubscriptionEntity> page = hasQuery
+                    ? subscriptionRepository.searchByKeyword(query.trim(), pageable)
+                    : subscriptionRepository.findAllByOrderByIdDesc(pageable);
+            return page.map(this::toResponse);
+        }
+
+        Page<SubscriptionEntity> page = hasQuery
+                ? subscriptionRepository.searchByOwnerAndKeyword(currentUser.getUserId(), query.trim(), pageable)
+                : subscriptionRepository.findAllByOwnerUserIdOrderByIdDesc(currentUser.getUserId(), pageable);
+
+        return page.map(this::toResponse);
+    }
+
     public SubscriptionResponse create(SubscriptionUpsertRequest request) {
         AuthenticatedUser currentUser = currentAuthenticatedUserProvider.getCurrentUser();
         SubscriptionEntity subscriptionEntity = new SubscriptionEntity();
@@ -88,5 +106,9 @@ public class SubscriptionService {
         }
 
         return subscriptionEntity;
+    }
+
+    private boolean hasText(String value) {
+        return value != null && !value.trim().isEmpty();
     }
 }

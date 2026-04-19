@@ -2,6 +2,7 @@ package dawn.httt.server.controller;
 
 import dawn.httt.server.common.ApiResponse;
 import dawn.httt.server.common.ApiResponses;
+import dawn.httt.server.common.PageResponse;
 import dawn.httt.server.constant.PermissionActionConstant;
 import dawn.httt.server.dto.request.CreateTenantGroupMemberRequest;
 import dawn.httt.server.dto.request.CreateTenantGroupRequest;
@@ -12,7 +13,6 @@ import dawn.httt.server.dto.response.TenantGroupResponse;
 import dawn.httt.server.security.RequirePermission;
 import dawn.httt.server.service.TenantGroupService;
 import jakarta.validation.Valid;
-import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.Sort;
 import org.springframework.data.web.PageableDefault;
@@ -24,6 +24,7 @@ import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.PutMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
 @RestController
@@ -38,10 +39,11 @@ public class TenantGroupController {
 
     @GetMapping
     @RequirePermission(resource = "tenant_group", action = PermissionActionConstant.VIEW)
-    public ResponseEntity<ApiResponse<Page<TenantGroupResponse>>> listTenantGroups(
-            @PageableDefault(size = 20, sort = "id", direction = Sort.Direction.DESC) Pageable pageable
+    public ResponseEntity<ApiResponse<PageResponse<TenantGroupResponse>>> listTenantGroups(
+            @RequestParam(name = "q", required = false) String query,
+            @PageableDefault(size = 10, sort = "id", direction = Sort.Direction.DESC) Pageable pageable
     ) {
-        return ApiResponses.ok("Lay danh sach nhom nguoi thue thanh cong.", tenantGroupService.getAll(pageable));
+        return ApiResponses.ok("Lay danh sach nhom nguoi thue thanh cong.", PageResponse.from(tenantGroupService.getAll(query, pageable)));
     }
 
     @GetMapping("/{tenantGroupId}")
@@ -74,11 +76,15 @@ public class TenantGroupController {
 
     @GetMapping("/{tenantGroupId}/members")
     @RequirePermission(resource = "tenant_group_member", action = PermissionActionConstant.VIEW)
-    public ResponseEntity<ApiResponse<Page<TenantGroupMemberResponse>>> listMembers(
+    public ResponseEntity<ApiResponse<PageResponse<TenantGroupMemberResponse>>> listMembers(
             @PathVariable Long tenantGroupId,
-            @PageableDefault(size = 20, sort = "id", direction = Sort.Direction.ASC) Pageable pageable
+            @RequestParam(name = "q", required = false) String query,
+            @PageableDefault(size = 10, sort = "id", direction = Sort.Direction.ASC) Pageable pageable
     ) {
-        return ApiResponses.ok("Lay danh sach thanh vien thanh cong.", tenantGroupService.getMembers(tenantGroupId, pageable));
+        return ApiResponses.ok(
+                "Lay danh sach thanh vien thanh cong.",
+                PageResponse.from(tenantGroupService.getMembers(tenantGroupId, query, pageable))
+        );
     }
 
     @PostMapping("/{tenantGroupId}/members")

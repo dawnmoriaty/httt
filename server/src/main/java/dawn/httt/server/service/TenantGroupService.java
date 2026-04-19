@@ -28,6 +28,9 @@ import java.time.format.DateTimeParseException;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Locale;
+import java.util.Map;
+import java.util.function.Function;
+import java.util.stream.Collectors;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
@@ -65,6 +68,30 @@ public class TenantGroupService {
 
         return tenantGroupRepository.findAllByRepresentativeUserIdOrderByIdDesc(currentUser.getUserId(), pageable)
                 .map(this::toResponse);
+    }
+
+    @Transactional(readOnly = true)
+    public Page<TenantGroupResponse> getAll(String query, Pageable pageable) {
+        AuthenticatedUser currentUser = currentAuthenticatedUserProvider.getCurrentUser();
+        boolean hasQuery = hasText(query);
+
+        Page<TenantGroupEntity> page;
+        if (isSuperAdmin(currentUser)) {
+            page = hasQuery
+                    ? tenantGroupRepository.searchByKeyword(query.trim(), pageable)
+                    : tenantGroupRepository.findAllByOrderByIdDesc(pageable);
+        } else {
+            page = hasQuery
+                    ? tenantGroupRepository.searchByRepresentativeAndKeyword(currentUser.getUserId(), query.trim(), pageable)
+                    : tenantGroupRepository.findAllByRepresentativeUserIdOrderByIdDesc(currentUser.getUserId(), pageable);
+        }
+
+        List<Long> ids = page.getContent().stream().map(TenantGroupEntity::getId).toList();
+        Map<Long, TenantGroupEntity> groupMap = tenantGroupRepository.findByIdIn(ids)
+                .stream()
+                .collect(Collectors.toMap(TenantGroupEntity::getId, Function.identity()));
+
+        return page.map(group -> toResponse(groupMap.getOrDefault(group.getId(), group)));
     }
 
     @Transactional(readOnly = true)
@@ -131,6 +158,16 @@ public class TenantGroupService {
         return tenantGroupMemberRepository
                 .findByTenantGroup_IdOrderByIdAsc(tenantGroupEntity.getId(), pageable)
                 .map(this::toMemberResponse);
+    }
+
+    @Transactional(readOnly = true)
+    public Page<TenantGroupMemberResponse> getMembers(Long tenantGroupId, String query, Pageable pageable) {
+        TenantGroupEntity tenantGroupEntity = getAuthorizedTenantGroup(tenantGroupId);
+        Page<TenantGroupMemberEntity> page = hasText(query)
+                ? tenantGroupMemberRepository.searchByTenantGroupAndKeyword(tenantGroupEntity.getId(), query.trim(), pageable)
+                : tenantGroupMemberRepository.findByTenantGroup_IdOrderByIdAsc(tenantGroupEntity.getId(), pageable);
+
+        return page.map(this::toMemberResponse);
     }
 
     @Transactional
@@ -392,5 +429,9 @@ public class TenantGroupService {
         return currentUser != null
                 && currentUser.getRoleCodes() != null
                 && currentUser.getRoleCodes().contains(RoleCodeConstant.SUPER_ADMIN);
+    }
+
+    private boolean hasText(String value) {
+        return value != null && !value.trim().isEmpty();
     }
 }

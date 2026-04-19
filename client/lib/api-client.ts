@@ -99,6 +99,17 @@ type RequestOptions = {
   retryOnUnauthorized?: boolean;
 };
 
+export function buildPagingQuery(params: { page: number; size: number; q?: string }): string {
+  const searchParams = new URLSearchParams();
+  searchParams.set("page", String(params.page));
+  searchParams.set("size", String(params.size));
+  if (params.q && params.q.trim().length > 0) {
+    searchParams.set("q", params.q.trim());
+  }
+
+  return searchParams.toString();
+}
+
 export async function apiRequest<T>(path: string, options: RequestOptions = {}): Promise<T> {
   const {
     method = "GET",

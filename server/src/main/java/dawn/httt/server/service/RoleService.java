@@ -16,6 +16,9 @@ import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import java.util.LinkedHashSet;
 import java.util.List;
+import java.util.Map;
+import java.util.function.Function;
+import java.util.stream.Collectors;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -45,8 +48,17 @@ public class RoleService {
         this.permissionGuard = permissionGuard;
     }
 
-    public Page<RoleResponse> getAllRoles(Pageable pageable) {
-        return roleRepository.findAllByOrderByNameAsc(pageable).map(this::toResponse);
+    public Page<RoleResponse> getAllRoles(String query, Pageable pageable) {
+        Page<RoleEntity> page = hasText(query)
+                ? roleRepository.searchByKeyword(query.trim(), pageable)
+                : roleRepository.findAllByOrderByNameAsc(pageable);
+
+        List<Long> ids = page.getContent().stream().map(RoleEntity::getId).toList();
+        Map<Long, RoleEntity> roleMap = roleRepository.findWithPermissionsByIdIn(ids)
+                .stream()
+                .collect(Collectors.toMap(RoleEntity::getId, Function.identity()));
+
+        return page.map(roleEntity -> toResponse(roleMap.getOrDefault(roleEntity.getId(), roleEntity)));
     }
 
     public RoleResponse getRole(Long roleId) {
@@ -120,6 +132,10 @@ public class RoleService {
     private RoleEntity getRoleEntity(Long roleId) {
         return roleRepository.findWithPermissionsById(roleId)
                 .orElseThrow(() -> new NotFoundException("ROLE_NOT_FOUND", "Khong tim thay role."));
+    }
+
+    private boolean hasText(String value) {
+        return value != null && !value.trim().isEmpty();
     }
 
     private RoleResponse toResponse(RoleEntity roleEntity) {

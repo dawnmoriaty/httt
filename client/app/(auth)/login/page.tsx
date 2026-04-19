@@ -41,7 +41,7 @@ function LoginForm() {
         setMessage(error.message);
         pushToast(error.message, "error");
       } else {
-        setMessage("Dang nhap that bai. Vui long thu lai.");
+        setMessage("Đăng nhập thất bại. Vui lòng thử lại.");
         pushToast("Đăng nhập thất bại. Vui lòng thử lại.", "error");
       }
     } finally {
@@ -54,8 +54,8 @@ function LoginForm() {
       <Card className="w-full max-w-md space-y-6 p-7">
         <div className="space-y-2">
           <p className="text-xs font-semibold uppercase tracking-[0.22em] text-[var(--muted)]">HTTT Monolith</p>
-          <h1 className="text-2xl font-bold text-[var(--foreground)]">Dang nhap he thong RBAC</h1>
-          <p className="text-sm text-[var(--muted)]">Su dung tai khoan admin seeded de quan tri role, user, permission va module nguoi thue.</p>
+          <h1 className="text-2xl font-bold text-[var(--foreground)]">Đăng nhập hệ thống RBAC</h1>
+          <p className="text-sm text-[var(--muted)]">Sử dụng tài khoản admin seeded để quản trị role, user, permission và module người thuê.</p>
         </div>
 
         {message ? <Alert variant="error" message={message} /> : null}
@@ -76,7 +76,7 @@ function LoginForm() {
           </Field>
 
           <Button type="submit" className="w-full" loading={submitting}>
-            Dang nhap
+            Đăng nhập
           </Button>
 
           <div className="pt-1 text-right">

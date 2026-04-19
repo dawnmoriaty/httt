@@ -2,6 +2,7 @@ package dawn.httt.server.controller;
 
 import dawn.httt.server.common.ApiResponse;
 import dawn.httt.server.common.ApiResponses;
+import dawn.httt.server.common.PageResponse;
 import dawn.httt.server.constant.PermissionActionConstant;
 import dawn.httt.server.dto.request.CreateUserRequest;
 import dawn.httt.server.dto.request.UpdateUserRolesRequest;
@@ -9,7 +10,6 @@ import dawn.httt.server.dto.response.UserResponse;
 import dawn.httt.server.security.RequirePermission;
 import dawn.httt.server.service.UserService;
 import jakarta.validation.Valid;
-import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.Sort;
 import org.springframework.data.web.PageableDefault;
@@ -18,6 +18,7 @@ import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.PutMapping;
+import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
@@ -34,10 +35,11 @@ public class UserController {
 
     @GetMapping
     @RequirePermission(resource = "user", action = PermissionActionConstant.VIEW)
-    public ResponseEntity<ApiResponse<Page<UserResponse>>> listUsers(
-            @PageableDefault(size = 20, sort = "id", direction = Sort.Direction.DESC) Pageable pageable
+    public ResponseEntity<ApiResponse<PageResponse<UserResponse>>> listUsers(
+            @RequestParam(name = "q", required = false) String query,
+            @PageableDefault(size = 10, sort = "id", direction = Sort.Direction.DESC) Pageable pageable
     ) {
-        return ApiResponses.ok("Lay danh sach user thanh cong.", userService.getAllUsers(pageable));
+        return ApiResponses.ok("Lay danh sach user thanh cong.", PageResponse.from(userService.getAllUsers(query, pageable)));
     }
 
     @PostMapping

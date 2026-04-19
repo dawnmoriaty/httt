@@ -15,11 +15,11 @@ type NavItem = {
 };
 
 const navItems: NavItem[] = [
-  { href: "/dashboard", label: "Tong quan", resource: "subscription", action: "VIEW" },
-  { href: "/admin/roles", label: "Nhom quyen", resource: "role", action: "VIEW" },
-  { href: "/admin/permissions", label: "Danh muc quyen", resource: "permission", action: "VIEW" },
-  { href: "/admin/users", label: "Tai khoan", resource: "user", action: "VIEW" },
-  { href: "/tenant-groups", label: "Nguoi thue", resource: "tenant_group", action: "VIEW" },
+  { href: "/dashboard", label: "Tổng quan", resource: "subscription", action: "VIEW" },
+  { href: "/admin/roles", label: "Nhóm quyền", resource: "role", action: "VIEW" },
+  { href: "/admin/permissions", label: "Danh mục quyền", resource: "permission", action: "VIEW" },
+  { href: "/admin/users", label: "Tài khoản", resource: "user", action: "VIEW" },
+  { href: "/tenant-groups", label: "Người thuê", resource: "tenant_group", action: "VIEW" },
   { href: "/subscriptions", label: "Subscription", resource: "subscription", action: "VIEW" },
 ];
 
@@ -63,7 +63,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
               <p className="text-xs text-[var(--muted)]">{user?.selectedRoleCode ?? "NO_ROLE"}</p>
             </div>
             <Button variant="secondary" onClick={handleLogout}>
-              Dang xuat
+              Đăng xuất
             </Button>
           </div>
         </div>

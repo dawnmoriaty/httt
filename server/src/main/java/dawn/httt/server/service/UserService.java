@@ -12,7 +12,10 @@ import dawn.httt.server.exception.NotFoundException;
 import dawn.httt.server.repository.RoleRepository;
 import dawn.httt.server.repository.UserRepository;
 import java.util.LinkedHashSet;
+import java.util.Map;
 import java.util.List;
+import java.util.function.Function;
+import java.util.stream.Collectors;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.security.crypto.password.PasswordEncoder;
@@ -39,8 +42,17 @@ public class UserService {
         this.authSessionService = authSessionService;
     }
 
-    public Page<UserResponse> getAllUsers(Pageable pageable) {
-        return userRepository.findAllByOrderByIdAsc(pageable).map(this::toResponse);
+    public Page<UserResponse> getAllUsers(String query, Pageable pageable) {
+        Page<UserEntity> page = hasText(query)
+                ? userRepository.searchByKeyword(query.trim(), pageable)
+                : userRepository.findAllByOrderByIdAsc(pageable);
+
+        List<Long> ids = page.getContent().stream().map(UserEntity::getId).toList();
+        Map<Long, UserEntity> userMap = userRepository.findWithRolesByIdIn(ids)
+                .stream()
+                .collect(Collectors.toMap(UserEntity::getId, Function.identity()));
+
+        return page.map(userEntity -> toResponse(userMap.getOrDefault(userEntity.getId(), userEntity)));
     }
 
     @Transactional
@@ -103,6 +115,10 @@ public class UserService {
         if (ignoreUserId == null && userRepository.existsByEmail(email.trim().toLowerCase())) {
             throw new BadRequestException("EMAIL_EXISTS", "Email da ton tai.");
         }
+    }
+
+    private boolean hasText(String value) {
+        return value != null && !value.trim().isEmpty();
     }
 
     private UserResponse toResponse(UserEntity userEntity) {

@@ -27,9 +27,15 @@ public class PermissionService {
     }
 
     public Page<PermissionResponse> getAllPermissions(Pageable pageable) {
-        return permissionRepository
-                .findAllByOrderByModuleNameAscResourceNameAscActionNameAsc(pageable)
-                .map(this::toResponse);
+        return getAllPermissions(null, pageable);
+    }
+
+    public Page<PermissionResponse> getAllPermissions(String query, Pageable pageable) {
+        Page<PermissionEntity> page = hasText(query)
+                ? permissionRepository.searchByKeyword(query.trim(), pageable)
+                : permissionRepository.findAllByOrderByModuleNameAscResourceNameAscActionNameAsc(pageable);
+
+        return page.map(this::toResponse);
     }
 
     @Transactional
@@ -139,5 +145,9 @@ public class PermissionService {
                 .actionName(permissionEntity.getActionName())
                 .status(permissionEntity.getStatus())
                 .build();
+    }
+
+    private boolean hasText(String value) {
+        return value != null && !value.trim().isEmpty();
     }
 }

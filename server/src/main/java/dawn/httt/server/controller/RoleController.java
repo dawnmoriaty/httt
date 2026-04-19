@@ -2,6 +2,7 @@ package dawn.httt.server.controller;
 
 import dawn.httt.server.common.ApiResponse;
 import dawn.httt.server.common.ApiResponses;
+import dawn.httt.server.common.PageResponse;
 import dawn.httt.server.constant.PermissionActionConstant;
 import dawn.httt.server.dto.request.AssignRolePermissionsRequest;
 import dawn.httt.server.dto.request.CreateRoleRequest;
@@ -10,7 +11,6 @@ import dawn.httt.server.dto.response.RoleResponse;
 import dawn.httt.server.security.RequirePermission;
 import dawn.httt.server.service.RoleService;
 import jakarta.validation.Valid;
-import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.Sort;
 import org.springframework.data.web.PageableDefault;
@@ -22,6 +22,7 @@ import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.PutMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
 @RestController
@@ -36,10 +37,11 @@ public class RoleController {
 
     @GetMapping
     @RequirePermission(resource = "role", action = PermissionActionConstant.VIEW)
-    public ResponseEntity<ApiResponse<Page<RoleResponse>>> listRoles(
-            @PageableDefault(size = 20, sort = "id", direction = Sort.Direction.DESC) Pageable pageable
+    public ResponseEntity<ApiResponse<PageResponse<RoleResponse>>> listRoles(
+            @RequestParam(name = "q", required = false) String query,
+            @PageableDefault(size = 10, sort = "id", direction = Sort.Direction.DESC) Pageable pageable
     ) {
-        return ApiResponses.ok("Lay danh sach role thanh cong.", roleService.getAllRoles(pageable));
+        return ApiResponses.ok("Lay danh sach role thanh cong.", PageResponse.from(roleService.getAllRoles(query, pageable)));
     }
 
     @GetMapping("/{roleId}")
