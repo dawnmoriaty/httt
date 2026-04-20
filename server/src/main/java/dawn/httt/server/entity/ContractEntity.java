@@ -7,8 +7,6 @@ import lombok.Setter;
 
 import java.math.BigDecimal;
 import java.time.LocalDate;
-import jakarta.persistence.FetchType;
-import jakarta.persistence.ManyToOne;
 
 /**
  * Phân hệ: Hợp đồng — trung tâm liên kết toàn bộ hệ thống.
@@ -54,17 +52,9 @@ public class ContractEntity extends AuditEntity {
     @Column(name = "room_id", nullable = false)
     private Long roomId;
 
-    @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "room_id", nullable = false, insertable = false, updatable = false)
-    private RoomEntity room;
-
     /** FK → tenant_groups.id */
     @Column(name = "tenant_group_id", nullable = false)
     private Long tenantGroupId;
-
-    @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "tenant_group_id", nullable = false, insertable = false, updatable = false)
-    private TenantGroupEntity tenantGroup;
 
     /**
      * FK → users.id — nhân viên quản lý lập hợp đồng.
@@ -72,11 +62,6 @@ public class ContractEntity extends AuditEntity {
      */
     @Column(name = "created_by_user_id", nullable = false)
     private Long createdByUserId;
-
-    /** ManyToOne relationship to UserEntity */
-    @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "created_by_user_id", nullable = false, insertable = false, updatable = false)
-    private UserEntity user;
 
     /**
      * Giá thuê đàm phán thực tế (VND/tháng).

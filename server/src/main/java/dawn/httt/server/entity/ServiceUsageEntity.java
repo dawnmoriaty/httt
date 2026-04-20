@@ -7,9 +7,6 @@ import lombok.Setter;
 
 import java.math.BigDecimal;
 import java.time.LocalDate;
-import java.time.YearMonth;
-import jakarta.persistence.FetchType;
-import jakarta.persistence.ManyToOne;
 
 /**
  * Phân hệ: Dịch vụ — chỉ số / mức tiêu thụ thực tế theo từng tháng.
@@ -53,29 +50,12 @@ public class ServiceUsageEntity extends AuditEntity {
     @Column(name = "contract_id", nullable = false)
     private Long contractId;
 
-    @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "contract_id", nullable = false, insertable = false, updatable = false)
-    private ContractEntity contract;
-
     @Column(name = "room_id")
     private Long roomId;
-
-    @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "room_id", insertable = false, updatable = false)
-    private RoomEntity room;
-
-    /** FK → services.id */
-    @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "service_id", nullable = false)
-    private ServiceEntity service;
 
     /** FK → service_types.id */
     @Column(name = "service_type_id", nullable = false)
     private Long serviceTypeId;
-
-    @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "service_type_id", nullable = false, insertable = false, updatable = false)
-    private ServiceTypeEntity serviceType;
 
     /** Tháng tính phí (1–12). */
     @Column(name = "billing_month", nullable = false)
@@ -103,14 +83,6 @@ public class ServiceUsageEntity extends AuditEntity {
     @Column(name = "status", nullable = false)
     private Integer status = CommonStatusConstant.STATUS_ACTIVE;
 
-    /** Số đọc đầu kỳ (cho dịch vụ METERED, tham chiếu kiểm tra). */
-    @Column(name = "reading_start", precision = 10, scale = 3)
-    private BigDecimal readingStart;
-
-    /** Số đọc cuối kỳ (cho dịch vụ METERED). */
-    @Column(name = "reading_end", precision = 10, scale = 3)
-    private BigDecimal readingEnd;
-
     @Column(name = "previous_reading")
     private Integer previousReading;
 
@@ -119,9 +91,6 @@ public class ServiceUsageEntity extends AuditEntity {
 
     @Column(name = "consumption", precision = 10, scale = 3)
     private BigDecimal consumption;
-
-    @Column(name = "billing_period", length = 7)
-    private YearMonth billingPeriod;
 
     @Column(name = "reading_date")
     private LocalDate readingDate;

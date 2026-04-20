@@ -7,8 +7,6 @@ import lombok.Getter;
 import lombok.Setter;
 
 import java.math.BigDecimal;
-import jakarta.persistence.FetchType;
-import jakarta.persistence.OneToOne;
 
 /**
  * Phân hệ: Cơ sở vật chất — đơn vị phòng cho thuê.
@@ -78,7 +76,6 @@ public class RoomEntity extends AuditEntity {
     @Column(name = "note", length = 1000)
     private String note;
 
-    @OneToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "active_contract_id")
-    private ContractEntity activeContract;
+    @Column(name = "active_contract_id")
+    private Long activeContractId;
 }

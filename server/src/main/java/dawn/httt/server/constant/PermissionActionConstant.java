@@ -8,6 +8,8 @@ public final class PermissionActionConstant {
     public static final String ADD = "ADD";
     public static final String UPDATE = "UPDATE";
     public static final String DELETE = "DELETE";
+    public static final String TERMINATE = "TERMINATE";
+    public static final String CANCEL = "CANCEL";
     public static final String IMPORT = "IMPORT";
     public static final String EXPORT = "EXPORT";
 
@@ -16,6 +18,8 @@ public final class PermissionActionConstant {
             ADD,
             UPDATE,
             DELETE,
+            TERMINATE,
+            CANCEL,
             IMPORT,
             EXPORT
     );

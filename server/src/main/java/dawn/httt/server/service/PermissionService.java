@@ -128,6 +128,8 @@ public class PermissionService {
             case PermissionActionConstant.ADD -> "Them";
             case PermissionActionConstant.UPDATE -> "Sua";
             case PermissionActionConstant.DELETE -> "Xoa";
+            case PermissionActionConstant.TERMINATE -> "Ket thuc";
+            case PermissionActionConstant.CANCEL -> "Huy";
             case PermissionActionConstant.IMPORT -> "Nhap";
             case PermissionActionConstant.EXPORT -> "Xuat";
             default -> actionCode;

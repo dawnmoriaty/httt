@@ -11,7 +11,6 @@ import jakarta.persistence.JoinColumn;
 import jakarta.persistence.JoinTable;
 import jakarta.persistence.ManyToMany;
 import jakarta.persistence.ManyToOne;
-import jakarta.persistence.OneToMany;
 import jakarta.persistence.Table;
 import java.util.LinkedHashSet;
 import java.util.Set;
@@ -62,13 +61,4 @@ public class UserEntity extends AuditEntity {
     )
     private Set<RoleEntity> roles = new LinkedHashSet<>();
 
-    // Relationships for tenant-related data
-    @OneToMany(mappedBy = "user", fetch = FetchType.LAZY)
-    private Set<ContractEntity> contracts = new LinkedHashSet<>();
-
-    @OneToMany(mappedBy = "leader", fetch = FetchType.LAZY)
-    private Set<TenantGroupEntity> ledTenantGroups = new LinkedHashSet<>();
-
-    @OneToMany(mappedBy = "user", fetch = FetchType.LAZY)
-    private Set<TenantGroupMemberEntity> tenantGroupMemberships = new LinkedHashSet<>();
 }

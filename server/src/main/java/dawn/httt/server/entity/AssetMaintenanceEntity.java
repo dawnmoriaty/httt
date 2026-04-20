@@ -17,8 +17,8 @@ import lombok.Setter;
 @Getter
 @Setter
 @Entity
-@Table(name = "asset_maintenances")
-public class AssetMaintenanceEntity {
+@Table(name = "asset_maintenance")
+public class AssetMaintenanceEntity extends AuditEntity {
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)

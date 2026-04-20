@@ -19,8 +19,6 @@ public interface TenantGroupRepository extends JpaRepository<TenantGroupEntity, 
 
     Page<TenantGroupEntity> findAllByRepresentativeUserIdOrderByIdDesc(Long representativeUserId, Pageable pageable);
 
-    Page<TenantGroupEntity> findAllByLeader_Subscription_IdOrderByIdDesc(Long subscriptionId, Pageable pageable);
-
     @Query("""
             select tg from TenantGroupEntity tg
             where lower(tg.code) like lower(concat('%', :q, '%'))

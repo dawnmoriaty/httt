@@ -19,8 +19,17 @@ ALTER TABLE users ADD COLUMN IF NOT EXISTS relationship_to_owner VARCHAR(50) DEF
 ALTER TABLE users ADD COLUMN IF NOT EXISTS subscription_id BIGINT;
 
 -- Add foreign key constraint for subscription_id
-ALTER TABLE users ADD CONSTRAINT fk_users_subscription
-    FOREIGN KEY (subscription_id) REFERENCES subscriptions(id) ON DELETE SET NULL;
+DO $$
+BEGIN
+    IF NOT EXISTS (
+        SELECT 1
+        FROM pg_constraint
+        WHERE conname = 'fk_users_subscription'
+    ) THEN
+        ALTER TABLE users ADD CONSTRAINT fk_users_subscription
+            FOREIGN KEY (subscription_id) REFERENCES subscriptions(id) ON DELETE SET NULL;
+    END IF;
+END$$;
 
 -- Create index for common queries
 CREATE INDEX IF NOT EXISTS idx_users_subscription_id ON users(subscription_id);

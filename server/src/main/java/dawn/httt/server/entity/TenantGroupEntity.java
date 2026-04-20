@@ -2,12 +2,8 @@ package dawn.httt.server.entity;
 
 import dawn.httt.server.constant.CommonStatusConstant;
 import jakarta.persistence.*;
-import java.util.LinkedHashSet;
-import java.util.Set;
 import lombok.Getter;
 import lombok.Setter;
-import jakarta.persistence.FetchType;
-import jakarta.persistence.ManyToOne;
 
 /**
  * Phân hệ: Khách hàng — nhóm người thuê (có thể 1 hoặc nhiều người).
@@ -53,11 +49,6 @@ public class TenantGroupEntity extends AuditEntity {
     @Column(name = "representative_user_id", nullable = false)
     private Long representativeUserId;
 
-    /** ManyToOne relationship to UserEntity as leader */
-    @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "representative_user_id", nullable = false, insertable = false, updatable = false)
-    private UserEntity leader;
-
     /**
      * Trạng thái nhóm — dùng CommonStatusConstant.
      * ACTIVE=1 (đang ở), INACTIVE=2 (đã rời đi).
@@ -69,9 +60,4 @@ public class TenantGroupEntity extends AuditEntity {
     @Column(name = "note", length = 1000)
     private String note;
 
-    @OneToMany(mappedBy = "tenantGroup", fetch = FetchType.LAZY)
-    private Set<TenantGroupMemberEntity> members = new LinkedHashSet<>();
-
-    @OneToMany(mappedBy = "tenantGroup", fetch = FetchType.LAZY)
-    private Set<ContractEntity> contracts = new LinkedHashSet<>();
 }

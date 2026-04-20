@@ -8,12 +8,9 @@ import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
 import jakarta.persistence.JoinColumn;
 import jakarta.persistence.ManyToOne;
-import jakarta.persistence.OneToMany;
 import jakarta.persistence.Table;
 import jakarta.persistence.UniqueConstraint;
 import java.math.BigDecimal;
-import java.util.LinkedHashSet;
-import java.util.Set;
 import lombok.Getter;
 import lombok.Setter;
 
@@ -61,6 +58,4 @@ public class ServiceEntity extends AuditEntity {
     @Column(name = "description", length = 1000)
     private String description;
 
-    @OneToMany(mappedBy = "service", fetch = FetchType.LAZY)
-    private Set<ServiceUsageEntity> usages = new LinkedHashSet<>();
 }

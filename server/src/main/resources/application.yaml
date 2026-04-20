@@ -16,7 +16,7 @@ spring:
   sql:
     init:
       mode: always
-      data-locations: classpath:db/schema-optimization.sql,classpath:db/seed.sql
+      data-locations: classpath:db/migration_v2_expand_user.sql,classpath:db/schema-optimization.sql,classpath:db/seed.sql
   data:
     redis:
       host: ${SPRING_DATA_REDIS_HOST:localhost}

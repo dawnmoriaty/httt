@@ -18,7 +18,7 @@ import lombok.Setter;
 @Setter
 @Entity
 @Table(name = "cameras", uniqueConstraints = {
-    @UniqueConstraint(columnNames = {"subscription_id", "code"}),
+    @UniqueConstraint(columnNames = {"room_id", "code"}),
     @UniqueConstraint(columnNames = {"ip_address"})
 })
 public class CameraEntity extends AuditEntity {
@@ -28,12 +28,8 @@ public class CameraEntity extends AuditEntity {
     private Long id;
 
     @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "room_id")
+    @JoinColumn(name = "room_id", nullable = false)
     private RoomEntity room;
-
-    @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "subscription_id", nullable = false)
-    private SubscriptionEntity subscription;
 
     @Column(name = "code", nullable = false, length = 100)
     private String code;

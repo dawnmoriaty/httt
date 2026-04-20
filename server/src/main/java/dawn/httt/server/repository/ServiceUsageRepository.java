@@ -1,7 +1,6 @@
 package dawn.httt.server.repository;
 
 import dawn.httt.server.entity.ServiceUsageEntity;
-import java.time.YearMonth;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.stereotype.Repository;
 
@@ -19,7 +18,5 @@ public interface ServiceUsageRepository extends JpaRepository<ServiceUsageEntity
     List<ServiceUsageEntity> findByBillingYearAndBillingMonth(Integer billingYear, Integer billingMonth);
 
     List<ServiceUsageEntity> findByRoomId(Long roomId);
-
-    List<ServiceUsageEntity> findByBillingPeriod(YearMonth billingPeriod);
 
 }

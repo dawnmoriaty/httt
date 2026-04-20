@@ -366,10 +366,7 @@ public class TenantGroupService {
     }
 
     private TenantGroupResponse toResponse(TenantGroupEntity tenantGroupEntity) {
-        UserEntity representative = tenantGroupEntity.getLeader();
-        if (representative == null) {
-            representative = userRepository.findById(tenantGroupEntity.getRepresentativeUserId()).orElse(null);
-        }
+        UserEntity representative = userRepository.findById(tenantGroupEntity.getRepresentativeUserId()).orElse(null);
 
         long memberCount = tenantGroupMemberRepository.countByTenantGroup_Id(tenantGroupEntity.getId());
 

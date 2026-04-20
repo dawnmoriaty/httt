@@ -24,6 +24,13 @@ ALTER TABLE rooms
 CREATE INDEX IF NOT EXISTS idx_rooms_active_contract_id
     ON rooms(active_contract_id);
 
+-- cameras
+ALTER TABLE cameras
+    ALTER COLUMN subscription_id DROP NOT NULL;
+
+CREATE UNIQUE INDEX IF NOT EXISTS uq_cameras_room_code
+    ON cameras(room_id, code);
+
 -- service_usages
 ALTER TABLE service_usages
     ADD COLUMN IF NOT EXISTS room_id BIGINT;

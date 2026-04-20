@@ -16,5 +16,5 @@ public interface RoomRepository extends JpaRepository<RoomEntity, Long> {
 
     List<RoomEntity> findByStatusAndFloor(Integer status, Integer floor);
 
-    List<RoomEntity> findByActiveContract_Id(Long contractId);
+    List<RoomEntity> findByActiveContractId(Long contractId);
 }

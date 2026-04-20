@@ -7,8 +7,6 @@ import lombok.Setter;
 
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
-import jakarta.persistence.FetchType;
-import jakarta.persistence.ManyToOne;
 
 /**
  * Phân hệ: Tài chính — từng lần thanh toán cho một hoá đơn.
@@ -50,11 +48,6 @@ public class PaymentEntity extends AuditEntity {
      */
     @Column(name = "received_by_user_id", nullable = false)
     private Long receivedByUserId;
-
-    /** ManyToOne relationship to UserEntity */
-    @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "received_by_user_id", nullable = false, insertable = false, updatable = false)
-    private UserEntity user;
 
     /** Số tiền thu được lần này (VND). */
     @Column(name = "amount", nullable = false, precision = 15, scale = 2)
